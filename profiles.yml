@@ -1,0 +1,7 @@
+property_transactions_lakehouse:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: data/dev.duckdb
+      schema: main

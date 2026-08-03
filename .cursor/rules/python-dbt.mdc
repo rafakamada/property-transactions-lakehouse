@@ -1,0 +1,13 @@
+---
+description: Python conventions for ingest scripts and dbt Python models
+globs: "**/*.py"
+alwaysApply: false
+---
+
+# Python
+
+- Format and lint with Ruff (`uv run ruff format .`, `uv run ruff check --fix .`).
+- Prefer SQL dbt models for transforms; use Python only when necessary.
+- Ingest scripts (`scripts/ingest_raw.py`): preserve source column names and types; only add technical metadata (`_source_file`, `_loaded_at`).
+- dbt Python models must expose `def model(dbt, session):` and return a relation DuckDB can materialize.
+- For pure Python helpers, use pytest-style TDD when adding logic.

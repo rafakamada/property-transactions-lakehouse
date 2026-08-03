@@ -1,0 +1,29 @@
+---
+description: DuckDB + dbt lakehouse project context and workflows
+alwaysApply: true
+---
+
+# Project context
+
+Stack: DuckDB + dbt (dbt-duckdb), managed with uv and Python 3.12.
+
+## Layout and flow
+
+- Landing: yearly `data/landing/*.xlsx` (one sheet per month); not queried by models
+- Ingest: `uv run python scripts/ingest_raw.py` → DuckDB schema `raw` (full replace per file)
+- Transform: `stg_` (views) → `int_` (views) → `dim_` (tables) / `fct_` (incremental merge)
+- Materialization details: `docs/modeling.md`
+- Always set `DBT_PROFILES_DIR=.` (see `.env.example`)
+
+Never read landing XLSX from dbt models; go through `source('raw', ...)` after ingest.
+
+## Day-to-day
+
+```bash
+uv sync
+source .venv/bin/activate
+export DBT_PROFILES_DIR=.
+dbt debug
+```
+
+Use Ruff for Python (`uv run ruff format .` / `uv run ruff check --fix .`). Track progress in `ITERATION_LOG.md`.

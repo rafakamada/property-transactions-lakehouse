@@ -1,0 +1,7 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    description: As-ingested XLSX tables; column names and types preserved from source files.
+    tables: [] # add one entry per ingested table as files arrive

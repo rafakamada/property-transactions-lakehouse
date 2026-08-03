@@ -1,0 +1,37 @@
+---
+description: Test-first data modeling with dbt for property transaction models
+alwaysApply: true
+---
+
+# Data TDD
+
+## When it applies
+
+- Apply when promoting SQL into `models/staging`, `intermediate`, or `marts`.
+- Skip for `analyses/` and early EDA while grain is unknown.
+- Raw is not TDD-modeled (ingest preserves source shape). Light smoke checks only after ingest if useful.
+
+## Red → green
+
+1. Define grain and contracts in `schema.yml` (`unique`, `not_null`, `accepted_values`, `relationships`).
+2. Use small CSV fixtures under `seeds/` when XLSX is awkward for tests.
+3. Implement model SQL until `dbt run` + `dbt test` pass.
+4. Refactor only after tests are green.
+
+## Test pyramid
+
+Seeds/fixtures → generic schema tests → singular tests in `tests/` for domain rules.
+
+## Layer expectations
+
+- `stg_*`: unique/not_null on keys; accepted_values for enums; from `source('raw', ...)`; views, not incremental.
+- `int_*`: relationships and row-preservation where joins matter.
+- `fct_*`: grain + `unique_key` tests; prefer incremental merge (see `docs/modeling.md`).
+- `dim_*`: unique dimension keys; table materialization.
+
+## Agent behavior
+
+- Ship `schema.yml` tests with every model change.
+- Prefer failing tests before non-trivial transform logic (staging up).
+- Remind to run `DBT_PROFILES_DIR=. dbt test` after model changes.
+- Do not add `dbt-unit-testing` unless the user asks.
