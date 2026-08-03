@@ -1,0 +1,24 @@
+name: property_transactions_lakehouse
+version: "1.0.0"
+config-version: 2
+profile: property_transactions_lakehouse
+
+model-paths: [models]
+analysis-paths: [analyses]
+test-paths: [tests]
+seed-paths: [seeds]
+macro-paths: [macros]
+snapshot-paths: [snapshots]
+clean-targets: [target, dbt_packages]
+
+models:
+  property_transactions_lakehouse:
+    staging:
+      # Always views — not incremental (see docs/modeling.md)
+      +materialized: view
+    intermediate:
+      +materialized: view
+    marts:
+      # Folder default is table. Fact models (fct_*) should override to
+      # incremental + merge with a unique_key (see docs/modeling.md).
+      +materialized: table

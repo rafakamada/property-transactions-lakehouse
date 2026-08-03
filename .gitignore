@@ -216,3 +216,26 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# dbt
+target/
+dbt_packages/
+logs/
+dbt.log
+
+# DuckDB local databases
+*.duckdb
+*.duckdb.wal
+data/*.duckdb
+
+# Landing zone source files (keep directory via .gitkeep)
+data/landing/*
+!data/landing/.gitkeep
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# dbt local user state
+.user.yml

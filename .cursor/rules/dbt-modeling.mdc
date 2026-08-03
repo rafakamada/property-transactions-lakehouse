@@ -1,0 +1,25 @@
+---
+description: Layered dbt modeling conventions for the lakehouse
+globs: models/**
+alwaysApply: false
+---
+
+# dbt modeling layers
+
+Pipeline: landing files → DuckDB `raw` (ingest) → `stg_` → `int_` → `fct_` / `dim_`.
+
+| Layer | Location / naming | Role |
+|-------|-------------------|------|
+| Landing | `data/landing/` | Yearly `.xlsx` (sheets = months); not queried by models |
+| Raw | schema `raw`, `source('raw', ...)` | As-ingested; full replace per file; no incremental |
+| Staging | `stg_*` | Rename, cast, dedupe; **views only — never incremental** |
+| Intermediate | `int_*` | Joins and shared logic; views by default |
+| Marts | `dim_*` tables; `fct_*` **incremental + merge** | Analysis-ready; see `docs/modeling.md` |
+
+Materializations: staging/intermediate = view; marts folder default = table; **override `fct_*` to `incremental` + `unique_key` + `incremental_strategy='merge'`**.
+
+- One model per file; document grain and primary keys in `schema.yml`.
+- Staging reads only from `source('raw', ...)`.
+- After re-ingest (new month or historical correction): `dbt run`; use `--full-refresh` on a fact after logic changes.
+- When adding a new XLSX source table, update `models/staging/_sources.yml`.
+- Run `dbt test` after model changes (see `data-tdd.mdc`).

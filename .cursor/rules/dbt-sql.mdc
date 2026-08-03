@@ -1,0 +1,13 @@
+---
+description: dbt SQL style conventions
+globs: "**/*.sql"
+alwaysApply: false
+---
+
+# dbt SQL
+
+- Reference relations with `ref()` or `source()` only — never hard-code database table names.
+- Prefer lowercase SQL keywords.
+- Prefer CTEs over nested subqueries; name CTEs for the step they represent.
+- Comment non-obvious business logic (grain, filters, dedupe rules).
+- Keep one logical transform per model file.

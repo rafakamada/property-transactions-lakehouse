@@ -1,0 +1,20 @@
+---
+description: Before committing, format code and update ITERATION_LOG.md
+alwaysApply: true
+---
+
+# Commit hygiene
+
+When the user asks to commit, **before** `git commit`:
+
+1. Run `uv run ruff format .` and `uv run ruff check --fix .`.
+2. Append a new entry to `ITERATION_LOG.md` (newest first).
+
+Each log entry must include:
+
+- Date (`YYYY-MM-DD`)
+- Short title matching the change intent
+- 1–3 bullets: what changed and why (not a file dump)
+- Optional: commands to verify (`dbt test`, `dbt run`, etc.)
+
+Stage the updated `ITERATION_LOG.md` with the same commit. Only update the log when committing — do not invent entries for commits the user did not ask for.

@@ -1,0 +1,41 @@
+[project]
+name = "property-transactions-lakehouse"
+version = "0.1.0"
+description = "Learn DuckDB and dbt while analyzing property transaction data"
+readme = "README.md"
+authors = [
+    { name = "Rafael Kamada", email = "rafakamada@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "dbt-duckdb>=1.10.1",
+    "duckdb>=1.5.5",
+]
+
+[project.scripts]
+property-transactions-lakehouse = "property_transactions_lakehouse:main"
+
+[build-system]
+requires = ["uv_build>=0.12.1,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.16.1",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+pythonpath = ["scripts"]
+testpaths = ["tests/unit"]
