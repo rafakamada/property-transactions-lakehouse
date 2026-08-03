@@ -2,6 +2,12 @@
 
 Newest entries first. Update this file as part of every commit (see `.cursor/rules/commit-hygiene.mdc`).
 
+## 2026-08-03 — Fail on ingest table-name collisions
+
+- Raise when distinct landing files sanitize to the same `raw` table name
+- Cover hyphen/underscore and case/space collisions in unit tests
+- Verify: `uv run pytest tests/unit/test_ingest_raw.py`
+
 ## 2026-08-03 — Initial setup
 
 - uv + Python 3.12, dbt-duckdb, DuckDB, Ruff, pytest

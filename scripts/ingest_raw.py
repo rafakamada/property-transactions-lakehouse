@@ -23,6 +23,10 @@ DB_PATH = REPO_ROOT / "data" / "dev.duckdb"
 EXCEL_SUFFIXES = {".xlsx", ".xlsm"}
 
 
+class TableNameCollisionError(ValueError):
+    """Raised when distinct landing files sanitize to the same DuckDB table name."""
+
+
 def find_excel_files(landing_dir: Path) -> list[Path]:
     return sorted(
         p
@@ -38,7 +42,30 @@ def sanitize_table_name(stem: str) -> str:
     return name
 
 
+def resolve_table_names(files: list[Path]) -> dict[Path, str]:
+    """Map each file to a unique sanitized table name, or raise on collisions."""
+    by_table: dict[str, list[Path]] = {}
+    for path in files:
+        table = sanitize_table_name(path.stem)
+        by_table.setdefault(table, []).append(path)
+
+    collisions = {table: paths for table, paths in by_table.items() if len(paths) > 1}
+    if collisions:
+        parts: list[str] = []
+        for table, paths in sorted(collisions.items()):
+            names = ", ".join(sorted(p.name for p in paths))
+            parts.append(f"raw.{table} <- [{names}]")
+        detail = "; ".join(parts)
+        raise TableNameCollisionError(
+            "distinct landing files sanitize to the same table name: "
+            f"{detail}. Rename files so stems stay unique after sanitization."
+        )
+
+    return {path: sanitize_table_name(path.stem) for path in files}
+
+
 def ingest(files: list[Path], db_path: Path) -> list[str]:
+    table_names = resolve_table_names(files)
     db_path.parent.mkdir(parents=True, exist_ok=True)
     con = duckdb.connect(str(db_path))
     created: list[str] = []
@@ -48,7 +75,7 @@ def ingest(files: list[Path], db_path: Path) -> list[str]:
         con.execute("CREATE SCHEMA IF NOT EXISTS raw;")
         loaded_at = datetime.now(UTC).isoformat()
         for path in files:
-            table = sanitize_table_name(path.stem)
+            table = table_names[path]
             # Preserve source columns; append technical metadata only.
             con.execute(
                 f"""
@@ -81,7 +108,12 @@ def main() -> int:
         )
         return 1
 
-    created = ingest(files, DB_PATH)
+    try:
+        created = ingest(files, DB_PATH)
+    except TableNameCollisionError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
     print(f"done: {len(created)} table(s) in {DB_PATH}")
     return 0
 

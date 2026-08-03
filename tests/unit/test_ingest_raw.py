@@ -3,7 +3,12 @@
 from pathlib import Path
 
 import pytest
-from ingest_raw import find_excel_files, sanitize_table_name
+from ingest_raw import (
+    TableNameCollisionError,
+    find_excel_files,
+    resolve_table_names,
+    sanitize_table_name,
+)
 
 
 @pytest.mark.parametrize(
@@ -45,3 +50,36 @@ def test_find_excel_files_filters_and_sorts(tmp_path: Path) -> None:
         "macro.xlsm",
     ]
     assert all(p.is_file() for p in found)
+
+
+def test_resolve_table_names_unique(tmp_path: Path) -> None:
+    a = tmp_path / "2024.xlsx"
+    b = tmp_path / "2025.xlsx"
+    a.write_bytes(b"")
+    b.write_bytes(b"")
+
+    assert resolve_table_names([a, b]) == {a: "t_2024", b: "t_2025"}
+
+
+def test_resolve_table_names_collision_hyphen_vs_underscore(tmp_path: Path) -> None:
+    hyphen = tmp_path / "a-b.xlsx"
+    underscore = tmp_path / "a_b.xlsx"
+    hyphen.write_bytes(b"")
+    underscore.write_bytes(b"")
+
+    with pytest.raises(TableNameCollisionError, match=r"raw\.a_b") as exc_info:
+        resolve_table_names([hyphen, underscore])
+
+    message = str(exc_info.value)
+    assert "a-b.xlsx" in message
+    assert "a_b.xlsx" in message
+
+
+def test_resolve_table_names_collision_case_and_space(tmp_path: Path) -> None:
+    spaced = tmp_path / "Property Sales.xlsx"
+    snake = tmp_path / "property_sales.xlsx"
+    spaced.write_bytes(b"")
+    snake.write_bytes(b"")
+
+    with pytest.raises(TableNameCollisionError, match=r"raw\.property_sales"):
+        resolve_table_names([spaced, snake])
