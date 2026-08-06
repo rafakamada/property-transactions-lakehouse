@@ -2,6 +2,10 @@
 
 Newest entries first. Update this file as part of every commit (see `.cursor/rules/commit-hygiene.mdc`).
 
+## 2026-08-06 — Document querying DuckDB
+
+- README: how to list/query `raw` tables via Python, DuckDB CLI, DBeaver, and Cursor/VS Code
+
 ## 2026-08-06 — Add raw ingestion
 
 - Config-driven multi-sheet ITBI ingest (`config/ingest_landing.yml` → `raw.itbi_YYYY` + year-suffixed other sheets)
