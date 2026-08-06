@@ -2,6 +2,12 @@
 
 Newest entries first. Update this file as part of every commit (see `.cursor/rules/commit-hygiene.mdc`).
 
+## 2026-08-06 — Add CI for lint and unit tests
+
+- GitHub Actions workflow runs Ruff and pytest on PRs and pushes to `main`
+- README notes that dbt ingest/run/test CI should follow once transforms exist
+- Verify: `uv run ruff check .`, `uv run ruff format --check .`, `uv run pytest`
+
 ## 2026-08-03 — Fail on ingest table-name collisions
 
 - Raise when distinct landing files sanitize to the same `raw` table name
