@@ -2,17 +2,22 @@
 
 ## Source shape
 
-- One XLSX file per **year** in `data/landing/`
-- One sheet per **month** inside each file
+Public ITBI transaction downloads: [Prefeitura de São Paulo — Dados das Transações Imobiliárias](https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501).
+
+- One XLSX file per **year** in `data/landing/` as `YYYY.xlsx`
+- Sheet layout is declared in [`config/ingest_landing.yml`](../config/ingest_landing.yml):
+  - **Month sheets** (`MON-YYYY`) → `UNION ALL` into `raw.itbi_YYYY`
+  - **Other declared sheets** → one `raw` table each (`sanitize(sheet)_YYYY` or explicit `table:`)
+- Undeclared sheets fail ingest; there is no skip list
 - Current-year file is replaced monthly; past years may be re-dropped when corrected
 - Ingest loads raw with **full replace** per file (`CREATE OR REPLACE`); raw is never a dbt incremental model
-- Multi-sheet (one tab per month) loading is part of the intended ingest design; extend `scripts/ingest_raw.py` when real year files are added
+- Month cells are read as VARCHAR (`all_varchar`) so typing happens in staging
 
 ## Layer materializations
 
 | Layer | Default | Notes |
 |-------|---------|--------|
-| Raw (ingest) | DuckDB table | Year-level replace from XLSX |
+| Raw (ingest) | DuckDB table | Year-level replace from XLSX via YAML contract |
 | Staging (`stg_*`) | view | Always reflect latest raw; do **not** use incremental |
 | Intermediate (`int_*`) | view | Promote to table only if a model is slow |
 | Dimensions (`dim_*`) | table | Full rebuild is fine for learning |

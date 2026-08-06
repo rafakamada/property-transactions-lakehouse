@@ -2,9 +2,12 @@
 
 Learn DuckDB and dbt while analyzing property transaction data.
 
-Pipeline: yearly landing XLSX (sheets = months) → DuckDB `raw` (full replace) → dbt staging → intermediate → marts.
+**Public data source:** [Dados das Transações Imobiliárias com recolhimento de ITBI — Prefeitura de São Paulo](https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501) (yearly Excel/ODS downloads).
+
+Pipeline: yearly landing XLSX (sheets = months + reference tabs) → DuckDB `raw` (full replace, config-driven) → dbt staging → intermediate → marts.
 
 Modeling and incremental decisions: [docs/modeling.md](docs/modeling.md).  
+Ingest contract: [config/ingest_landing.yml](config/ingest_landing.yml).  
 Progress log: [ITERATION_LOG.md](ITERATION_LOG.md).
 
 ## Setup
@@ -19,16 +22,21 @@ Requires [uv](https://docs.astral.sh/uv/) and Python 3.12.
 
 ## Ingest XLSX into raw
 
-Expected landing layout: **one file per year**, **one sheet per month**. Re-drop a year file when that year is updated or corrected; ingest replaces the corresponding `raw` table.
-
-1. Drop `.xlsx` / `.xlsm` files into `data/landing/`.
-2. Run:
+1. Download a year file from the [Prefeitura portal](https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501).
+2. Rename/copy into `data/landing/YYYY.xlsx` (download filenames are unreliable).
+3. Declare sheets in [config/ingest_landing.yml](config/ingest_landing.yml):
+   - **Month sheets** (`MON-YYYY`) → unioned into `raw.itbi_YYYY`
+   - **Other sheets** (LEGENDA, EXPLICAÇÕES, usos, padrões, …) → one table each with a year suffix
+4. Register new tables in `models/staging/_sources.yml`.
+5. Run:
 
 ```bash
 uv run python scripts/ingest_raw.py
 ```
 
-Tables land in DuckDB schema `raw` inside `data/dev.duckdb`, with source columns preserved plus `_source_file` and `_loaded_at`. Declare each table in `models/staging/_sources.yml` when you start modeling it.
+Re-drop a year file when that year is updated or corrected; ingest replaces the corresponding `raw` tables for that file.
+
+Optional: when adding or updating a year spreadsheet, the project skill **configure-itbi-landing** (`.cursor/skills/configure-itbi-landing/`) walks through copy/rename, YAML, `_sources.yml`, and ingest — not mandatory, but it avoids doing that work by hand.
 
 ## dbt
 

@@ -2,6 +2,12 @@
 
 Newest entries first. Update this file as part of every commit (see `.cursor/rules/commit-hygiene.mdc`).
 
+## 2026-08-06 — Add raw ingestion
+
+- Config-driven multi-sheet ITBI ingest (`config/ingest_landing.yml` → `raw.itbi_YYYY` + year-suffixed other sheets)
+- Project skill `configure-itbi-landing` for adding/updating year files; docs cite Prefeitura portal
+- Verify: `uv run pytest`, `uv run python scripts/ingest_raw.py`
+
 ## 2026-08-06 — Fix CI push trigger for default branch
 
 - Point workflow push trigger and docs at `master` (repo default), not `main`

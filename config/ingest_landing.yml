@@ -1,0 +1,97 @@
+# Landing XLSX → DuckDB raw ingest contract.
+# See docs/modeling.md and .cursor/skills/configure-itbi-landing/
+# Public data: https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501
+
+version: 1
+
+defaults:
+  all_varchar: true
+  transaction_range: "A1:AB"
+  stop_at_empty: true
+  transaction_columns:
+    - "N° do Cadastro (SQL)"
+    - "Nome do Logradouro"
+    - "Número"
+    - "Complemento"
+    - "Bairro"
+    - "Referência"
+    - "CEP"
+    - "Natureza de Transação"
+    - "Valor de Transação (declarado pelo contribuinte)"
+    - "Data de Transação"
+    - "Valor Venal de Referência"
+    - "Proporção Transmitida (%)"
+    - "Valor Venal de Referência (proporcional)"
+    - "Base de Cálculo adotada"
+    - "Tipo de Financiamento"
+    - "Valor Financiado"
+    - "Cartório de Registro"
+    - "Matrícula do Imóvel"
+    - "Situação do SQL"
+    - "Área do Terreno (m2)"
+    - "Testada (m)"
+    - "Fração Ideal"
+    - "Área Construída (m2)"
+    - "Uso (IPTU)"
+    - "Descrição do uso (IPTU)"
+    - "Padrão (IPTU)"
+    - "Descrição do padrão (IPTU)"
+    - "ACC (IPTU)"
+
+files:
+  "2024.xlsx":
+    year: 2024
+    transaction_table: itbi_2024
+    month_sheets:
+      pattern: "^(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)-2024$"
+      header: true
+      overrides:
+        # Truly headerless months (row 1 is data).
+        JAN-2024:
+          header: false
+        OUT-2024:
+          header: false
+    other_sheets:
+      LEGENDA:
+        table: legenda_2024
+        header: false
+      EXPLICAÇÕES:
+        table: explicacoes_2024
+      "Tabela de USOS":
+        table: tabela_de_usos_2024
+      "Tabela de PADRÕES":
+        table: tabela_de_padroes_2024
+
+  "2025.xlsx":
+    year: 2025
+    transaction_table: itbi_2025
+    month_sheets:
+      pattern: "^(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)-2025$"
+      header: true
+    other_sheets:
+      LEGENDA:
+        table: legenda_2025
+        header: false
+      EXPLICAÇÕES:
+        table: explicacoes_2025
+      "Tabela de USOS":
+        table: tabela_de_usos_2025
+      "Tabela de PADRÕES":
+        table: tabela_de_padroes_2025
+
+  "2026.xlsx":
+    year: 2026
+    transaction_table: itbi_2026
+    month_sheets:
+      pattern: "^(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)-2026$"
+      header: true
+    other_sheets:
+      LEGENDA:
+        table: legenda_2026
+        header: false
+      EXPLICAÇÕES:
+        table: explicacoes_2026
+      "Tabela de USOS":
+        table: tabela_de_usos_2026
+      "Tabela de PADRÕES":
+        table: tabela_de_padroes_2026
