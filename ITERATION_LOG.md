@@ -2,6 +2,10 @@
 
 Newest entries first. Update this file as part of every commit (see `.cursor/rules/commit-hygiene.mdc`).
 
+## 2026-08-06 — Fix CI push trigger for default branch
+
+- Point workflow push trigger and docs at `master` (repo default), not `main`
+
 ## 2026-08-06 — Add CI for lint and unit tests
 
 - GitHub Actions workflow runs Ruff and pytest on PRs and pushes to `main`

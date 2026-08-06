@@ -59,6 +59,6 @@ uv run pytest
 
 ## CI
 
-Pull requests and pushes to `main` run Ruff (check + format) and pytest via GitHub Actions (`.github/workflows/ci.yml`).
+Pull requests and pushes to `master` run Ruff (check + format) and pytest via GitHub Actions (`.github/workflows/ci.yml`).
 
 When dbt models and transforms are added, extend CI to run fixture ingest plus `dbt run` / `dbt test` — that job is not implemented yet.
