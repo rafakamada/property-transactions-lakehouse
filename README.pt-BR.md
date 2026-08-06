@@ -2,7 +2,7 @@
 
 English: [README.md](README.md)
 
-Aprenda DuckDB e dbt analisando dados de transações imobiliárias.
+Aprender DuckDB e dbt analisando dados de transações imobiliárias.
 
 **Fonte de dados pública:** [Dados das Transações Imobiliárias com recolhimento de ITBI — Prefeitura de São Paulo](https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501) (downloads anuais em Excel/ODS).
 
