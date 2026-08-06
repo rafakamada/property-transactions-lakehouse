@@ -3,5 +3,26 @@ version: 2
 sources:
   - name: raw
     schema: raw
-    description: As-ingested XLSX tables; column names and types preserved from source files.
-    tables: [] # add one entry per ingested table as files arrive
+    description: >-
+      As-ingested ITBI XLSX tables from the Prefeitura de São Paulo portal
+      (https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501).
+      Column names and types preserved from source files (varchar via ingest).
+    tables:
+      - name: itbi_2024
+        description: Union of 2024 month sheets (payment-month reference in _reference_month).
+      - name: itbi_2025
+        description: Union of 2025 month sheets.
+      - name: itbi_2026
+        description: Union of 2026 month sheets present in the landing file.
+      - name: legenda_2024
+      - name: legenda_2025
+      - name: legenda_2026
+      - name: explicacoes_2024
+      - name: explicacoes_2025
+      - name: explicacoes_2026
+      - name: tabela_de_usos_2024
+      - name: tabela_de_usos_2025
+      - name: tabela_de_usos_2026
+      - name: tabela_de_padroes_2024
+      - name: tabela_de_padroes_2025
+      - name: tabela_de_padroes_2026

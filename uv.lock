@@ -633,6 +633,7 @@ source = { editable = "." }
 dependencies = [
     { name = "dbt-duckdb" },
     { name = "duckdb" },
+    { name = "pyyaml" },
 ]
 
 [package.dev-dependencies]
@@ -645,6 +646,7 @@ dev = [
 requires-dist = [
     { name = "dbt-duckdb", specifier = ">=1.10.1" },
     { name = "duckdb", specifier = ">=1.5.5" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
 ]
 
 [package.metadata.requires-dev]
