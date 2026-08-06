@@ -1,5 +1,7 @@
 # property-transactions-lakehouse
 
+Português: [README.pt-BR.md](README.pt-BR.md)
+
 Learn DuckDB and dbt while analyzing property transaction data.
 
 **Public data source:** [Dados das Transações Imobiliárias com recolhimento de ITBI — Prefeitura de São Paulo](https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501) (yearly Excel/ODS downloads).
@@ -8,7 +10,17 @@ Pipeline: yearly landing XLSX (sheets = months + reference tabs) → DuckDB `raw
 
 Modeling and incremental decisions: [docs/modeling.md](docs/modeling.md).  
 Ingest contract: [config/ingest_landing.yml](config/ingest_landing.yml).  
-Progress log: [ITERATION_LOG.md](ITERATION_LOG.md).
+Progress log: [ITERATION_LOG.md](ITERATION_LOG.md) ([pt-BR](ITERATION_LOG.pt-BR.md)).
+
+## Contents
+
+- [Setup](#setup)
+- [Ingest XLSX into raw](#ingest-xlsx-into-raw)
+- [Query DuckDB](#query-duckdb)
+- [dbt](#dbt)
+- [Formatting](#formatting)
+- [Python tests](#python-tests)
+- [CI](#ci)
 
 ## Setup
 
