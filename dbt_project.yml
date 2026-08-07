@@ -11,6 +11,10 @@ macro-paths: [macros]
 snapshot-paths: [snapshots]
 clean-targets: [target, dbt_packages]
 
+vars:
+  # Years included in stg_itbi union (raw.itbi_YYYY). Bump when adding a landing year.
+  itbi_years: [2024, 2025, 2026]
+
 models:
   property_transactions_lakehouse:
     staging:

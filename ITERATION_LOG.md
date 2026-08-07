@@ -6,6 +6,10 @@ Newest day first. One section per calendar day. Draft bullets for both this file
 `ITERATION_LOG.pt-BR.md`, preview them to the user, then append under today’s heading
 only after confirmation (create the day at the top if missing). See `.cursor/rules/commit-hygiene.mdc`.
 
+## 2026-08-07
+
+- **Add ITBI staging layer** — `stg_itbi` unions `raw.itbi_YYYY` with Jinja slugify (stop words dropped), type coercion, and schema-match guards; `schema.yml` + singular tests; docs and `configure-itbi-landing` updated for `vars.itbi_years`. Verify: `DBT_PROFILES_DIR=. dbt run -s stg_itbi`, `dbt test`
+
 ## 2026-08-06
 
 - **Add pt-BR docs and condense iteration log** — README TOC; `README.pt-BR.md`, `docs/modeling.pt-BR.md`, and `ITERATION_LOG.pt-BR.md`; one section per day in both logs; commit hygiene previews EN/pt-BR bullets and waits for confirmation before committing

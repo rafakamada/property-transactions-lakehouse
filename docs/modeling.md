@@ -27,6 +27,14 @@ Public ITBI transaction downloads: [Prefeitura de São Paulo — Dados das Trans
 
 Defaults for staging / intermediate / marts folders are in `dbt_project.yml`. Fact models override to incremental in their own `config()`.
 
+## Staging (`stg_itbi`)
+
+- Mechanical snake_case rename of Portuguese headers (accents stripped; stop words `de` / `da` / `do` / `das` / `dos` dropped)
+- Type coercion from ingest VARCHAR (dates, numerics) plus trim / empty-string → null
+- `UNION ALL` of `raw.itbi_YYYY` for years in `vars.itbi_years` ([`dbt_project.yml`](../dbt_project.yml))
+- Yearly column parity is enforced before union (compile-time macro + singular `dbt test`)
+- Verify with `DBT_PROFILES_DIR=. dbt run -s stg_itbi` and `dbt test`
+
 ## Incremental facts (learning decision)
 
 Use incremental models on **fact marts**, not on staging.

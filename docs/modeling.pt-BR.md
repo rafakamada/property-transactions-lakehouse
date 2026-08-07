@@ -27,6 +27,14 @@ Downloads públicos de transações ITBI: [Prefeitura de São Paulo — Dados da
 
 Os padrões das pastas staging / intermediate / marts estão em `dbt_project.yml`. Modelos de fato sobrescrevem para incremental no próprio `config()`.
 
+## Staging (`stg_itbi`)
+
+- Renomeação mecânica snake_case dos cabeçalhos em português (acentos removidos; stop words `de` / `da` / `do` / `das` / `dos` descartadas)
+- Coerção de tipos a partir do VARCHAR da ingestão (datas, numéricos) e trim / string vazia → null
+- `UNION ALL` de `raw.itbi_YYYY` para os anos em `vars.itbi_years` ([`dbt_project.yml`](../dbt_project.yml))
+- Paridade de colunas entre anos é exigida antes do union (macro em compile-time + teste singular no `dbt test`)
+- Verifique com `DBT_PROFILES_DIR=. dbt run -s stg_itbi` e `dbt test`
+
 ## Fatos incrementais (decisão de aprendizado)
 
 Use modelos incrementais nos **marts de fato**, não no staging.

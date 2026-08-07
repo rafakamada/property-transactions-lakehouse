@@ -6,6 +6,10 @@ Dia mais recente primeiro. Uma seção por dia civil. Redija bullets neste arqui
 `ITERATION_LOG.md`, mostre o preview ao usuário e só então acrescente sob o cabeçalho
 de hoje após confirmação (crie o dia no topo se ainda não existir). Veja `.cursor/rules/commit-hygiene.mdc`.
 
+## 2026-08-07
+
+- **Adicionar camada de staging ITBI** — `stg_itbi` une `raw.itbi_YYYY` com slugify Jinja (stop words removidas), coerção de tipos e guards de schema; `schema.yml` + testes singulares; docs e `configure-itbi-landing` atualizados para `vars.itbi_years`. Verificar: `DBT_PROFILES_DIR=. dbt run -s stg_itbi`, `dbt test`
+
 ## 2026-08-06
 
 - **Adicionar docs pt-BR e condensar log de iterações** — TOC no README; `README.pt-BR.md`, `docs/modeling.pt-BR.md` e `ITERATION_LOG.pt-BR.md`; uma seção por dia nos dois logs; higiene de commit exibe preview EN/pt-BR e só committa após confirmação

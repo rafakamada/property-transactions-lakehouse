@@ -8,7 +8,7 @@
 | `defaults.all_varchar` | Force VARCHAR on Excel read |
 | `defaults.transaction_range` | Usually `A1:AB` (28 month columns) |
 | `defaults.stop_at_empty` | Stop at first empty row for month sheets |
-| `defaults.transaction_columns` | Canonical 28 month column names |
+| `defaults.transaction_columns` | Canonical 28 month column names (all yearly `raw.itbi_*` must stay aligned) |
 | `files.<name>.year` | Calendar year; unique across files |
 | `files.<name>.transaction_table` | Target for month union (`itbi_YYYY`) |
 | `files.<name>.month_sheets.pattern` | Regex for month tabs |
