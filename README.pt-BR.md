@@ -2,7 +2,7 @@
 
 English: [README.md](README.md)
 
-Aprender DuckDB e dbt analisando dados de transações imobiliárias.
+Projeto para aprender DuckDB e dbt analisando dados de transações imobiliárias.
 
 **Fonte de dados pública:** [Dados das Transações Imobiliárias com recolhimento de ITBI — Prefeitura de São Paulo](https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501) (downloads anuais em Excel/ODS).
 
@@ -138,6 +138,7 @@ uv run pytest
 
 ## CI
 
-Pull requests e pushes para `master` rodam Ruff (check + format) e pytest via GitHub Actions (`.github/workflows/ci.yml`).
-
-Quando houver modelos e transformações dbt, estenda o CI para ingestão de fixtures mais `dbt run` / `dbt test` — esse job ainda não está implementado.
+Pull requests e pushes para `master` rodam Ruff (check + format), pytest, depois um
+seed mínimo do DuckDB raw (`scripts/seed_ci_raw.py`) mais `dbt run -s stg_itbi` e
+`dbt test` via GitHub Actions (`.github/workflows/ci.yml`). Os XLSX de landing não
+estão no git; o CI semeia linhas sintéticas em `raw.itbi_YYYY` em vez da ingestão completa.

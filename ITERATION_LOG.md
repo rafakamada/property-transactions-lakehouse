@@ -9,6 +9,7 @@ only after confirmation (create the day at the top if missing). See `.cursor/rul
 ## 2026-08-07
 
 - **Add ITBI staging layer** — `stg_itbi` unions `raw.itbi_YYYY` with Jinja slugify (stop words dropped), type coercion, and schema-match guards; `schema.yml` + singular tests; docs and `configure-itbi-landing` updated for `vars.itbi_years`. Verify: `DBT_PROFILES_DIR=. dbt run -s stg_itbi`, `dbt test`
+- **Add dbt to CI** — seed synthetic `raw.itbi_YYYY` via `scripts/seed_ci_raw.py`, then `dbt run -s stg_itbi` and `dbt test` in GitHub Actions; README CI notes updated
 
 ## 2026-08-06
 

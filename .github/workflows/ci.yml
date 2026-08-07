@@ -27,3 +27,16 @@ jobs:
 
       - name: Unit tests
         run: uv run pytest
+
+      - name: Seed DuckDB raw for dbt
+        run: uv run python scripts/seed_ci_raw.py
+
+      - name: dbt run
+        env:
+          DBT_PROFILES_DIR: .
+        run: uv run dbt run -s stg_itbi
+
+      - name: dbt test
+        env:
+          DBT_PROFILES_DIR: .
+        run: uv run dbt test

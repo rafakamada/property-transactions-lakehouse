@@ -9,6 +9,7 @@ de hoje após confirmação (crie o dia no topo se ainda não existir). Veja `.c
 ## 2026-08-07
 
 - **Adicionar camada de staging ITBI** — `stg_itbi` une `raw.itbi_YYYY` com slugify Jinja (stop words removidas), coerção de tipos e guards de schema; `schema.yml` + testes singulares; docs e `configure-itbi-landing` atualizados para `vars.itbi_years`. Verificar: `DBT_PROFILES_DIR=. dbt run -s stg_itbi`, `dbt test`
+- **Adicionar dbt ao CI** — seed sintético de `raw.itbi_YYYY` via `scripts/seed_ci_raw.py`, depois `dbt run -s stg_itbi` e `dbt test` no GitHub Actions; notas de CI no README atualizadas
 
 ## 2026-08-06
 
