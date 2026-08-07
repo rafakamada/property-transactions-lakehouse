@@ -1,0 +1,148 @@
+version: 2
+
+models:
+  - name: stg_itbi
+    description: >-
+      Cleaned ITBI transactions across configured years (vars.itbi_years).
+      Grain: one row per raw month-sheet transaction row (not a business unique key).
+      Renames Portuguese headers via mechanical slugify (accents stripped; stop words
+      de/da/do/das/dos dropped); trims empty strings to null; coerces dates and numerics.
+      Column descriptions follow the Prefeitura field dictionary on the workbook
+      EXPLICAÇÕES sheet (raw.explicacoes_*). The LEGENDA sheet only labels data origin
+      (ITBI base / IPTU base / calculated) and is not ingested as field docs.
+    columns:
+      - name: n_cadastro_sql
+        description: >-
+          Number that uniquely identifies the property in the IPTU fiscal cadastre
+          (Cadastro Imobiliário Fiscal). Declared by the taxpayer (N° do Cadastro / SQL).
+      - name: nome_logradouro
+        description: >-
+          Street name of the property address (street, alley, square, avenue, etc.).
+          Filled automatically by the system from the SQL.
+      - name: numero
+        description: >-
+          Property number on its street. Filled automatically by the system from the
+          SQL (Número do Imóvel).
+      - name: complemento
+        description: >-
+          Address complement for the property. Filled automatically by the system from
+          the SQL (Complemento do Imóvel).
+      - name: bairro
+        description: >-
+          Neighborhood of the property address. Filled automatically by the system from
+          the SQL.
+      - name: referencia
+        description: >-
+          Address reference for the property. IPTU-base field (not part of the DTI).
+      - name: cep
+        description: >-
+          Postal code (CEP) of the street for the property address. Filled automatically
+          by the system from the SQL.
+      - name: natureza_transacao
+        description: >-
+          Type of legal transaction through which the property is being transferred
+          (e.g. 1. Compra e venda). Declared by the taxpayer (Natureza da Transação).
+      - name: valor_transacao_declarado_pelo_contribuinte
+        description: >-
+          Economic value given for acquiring the property (BRL). Declared by the
+          taxpayer (Valor de Transação).
+      - name: data_transacao
+        description: >-
+          Date of the private instrument or public deed that formalizes the legal
+          transaction. Declared by the taxpayer; coerced from Excel serial/date in staging.
+      - name: valor_venal_referencia
+        description: >-
+          Reference market value published by the Prefeitura; initial parameter for the
+          ITBI tax base (BRL). Looked up by the system from the SQL and transaction date.
+      - name: proporcao_transmitida
+        description: >-
+          Share of the property being transferred (percent). Declared by the taxpayer;
+          100% when the entire property is transferred.
+      - name: valor_venal_referencia_proporcional
+        description: >-
+          Reference market value × transmitted proportion (BRL). Compared to the
+          transaction value to derive the tax base. System-calculated (LEGENDA:
+          calculated field).
+      - name: base_calculo_adotada
+        description: >-
+          ITBI tax base (BRL): the greater of transaction value and proportional
+          reference market value. System-calculated.
+      - name: tipo_financiamento
+        description: >-
+          Financing modality linked to the property acquisition. Declared by the
+          taxpayer; optional; valid for transaction nature 1. Compra e venda.
+      - name: valor_financiado
+        description: >-
+          Financing amount granted by a bank or financial institution for acquiring
+          the property (BRL). Declared by the taxpayer; optional.
+      - name: cartorio_registro
+        description: >-
+          Real-estate registry office responsible for the property's registration
+          (matrícula or transcription). Declared by the taxpayer.
+      - name: matricula_imovel
+        description: >-
+          Registration number (matrícula or transcription) of the transferred property.
+          Declared by the taxpayer.
+      - name: situacao_sql
+        description: >-
+          Whether the SQL is active or cancelled in the IPTU cadastre. IPTU-base field
+          (not part of the DTI).
+      - name: area_terreno_m2
+        description: >-
+          Land area in m². IPTU-base field (not part of the DTI).
+      - name: testada_m
+        description: >-
+          Frontage length in meters facing the street. IPTU-base field; may be blank
+          (more than two corners, internal lot, or landlocked lot).
+      - name: fracao_ideal
+        description: >-
+          Share of the condominium land area attributed to each autonomous unit.
+          IPTU-base field; 1.0000 when the property is not in a condominium.
+      - name: area_construida_m2
+        description: >-
+          Built area in m² (not necessarily the occupied footprint). IPTU-base field
+          (not part of the DTI).
+      - name: uso_iptu
+        description: >-
+          Code for the property's predominant use. IPTU-base field; domain in Tabela
+          de USOS.
+      - name: descricao_uso_iptu
+        description: >-
+          Description of the property's predominant use, looked up from the use code
+          via Tabela de USOS.
+      - name: padrao_iptu
+        description: >-
+          Code for construction type and standard. IPTU-base field; domain in Tabela
+          de PADRÕES.
+      - name: descricao_padrao_iptu
+        description: >-
+          Description of construction type/standard, looked up from the code via
+          Tabela de PADRÕES.
+      - name: acc_iptu
+        description: >-
+          Corrected year construction was completed (may change after renovation,
+          expansion, etc.). IPTU-base field (not part of the DTI).
+      - name: _source_file
+        description: Landing file name from ingest.
+        data_tests:
+          - not_null
+      - name: _source_sheet
+        description: Source month sheet name from ingest.
+        data_tests:
+          - not_null
+      - name: _loaded_at
+        description: Ingest timestamp.
+        data_tests:
+          - not_null
+      - name: _reference_month
+        description: Payment / reference month derived at ingest (date).
+        data_tests:
+          - not_null
+      - name: source_year
+        description: Calendar year of the raw.itbi_YYYY table this row came from.
+        data_tests:
+          - not_null
+          - accepted_values:
+              # Keep in sync with vars.itbi_years in dbt_project.yml
+              arguments:
+                values: [2024, 2025, 2026]
