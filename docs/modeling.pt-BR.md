@@ -4,6 +4,8 @@ English: [modeling.md](modeling.md)
 
 ## Formato da fonte
 
+### ITBI (transações)
+
 Downloads públicos de transações ITBI: [Prefeitura de São Paulo — Dados das Transações Imobiliárias](https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501).
 
 - Um arquivo XLSX por **ano** em `data/landing/` como `YYYY.xlsx`
@@ -15,11 +17,19 @@ Downloads públicos de transações ITBI: [Prefeitura de São Paulo — Dados da
 - A ingestão carrega o raw com **substituição completa** por arquivo (`CREATE OR REPLACE`); raw nunca é um modelo incremental do dbt
 - Células das abas de mês são lidas como VARCHAR (`all_varchar`); a tipagem ocorre no staging
 
+### CEP Aberto (referência de endereço)
+
+Dump de CEP baixado de [CEP Aberto](https://www.cepaberto.com/) (partes do estado de São Paulo em `data/landing/cep_aberto/`).
+
+- Partes CSV sem cabeçalho (`sp.cepaberto_parte_*.csv`) são declaradas em `csv_datasets` em [`config/ingest_landing.yml`](../config/ingest_landing.yml) e unidas em `raw.cep_aberto`
+- Colunas na ingestão: `cep`, `logradouro`, `complemento`, `bairro`, `id_cidade`, `id_bairro`
+- **Por quê:** a coluna `bairro` do ITBI é bagunçada e pouco confiável. Vamos juntar o CEP Aberto pelo `cep` normalizado nas camadas seguintes (intermediate/marts) para corrigir ou enriquecer o bairro. O staging só prepara as chaves de CEP (`stg_cep_aberto` / `stg_itbi`).
+
 ## Materializações por camada
 
 | Camada | Padrão | Notas |
 |--------|--------|--------|
-| Raw (ingestão) | tabela DuckDB | Substituição no nível do ano a partir do XLSX via contrato YAML |
+| Raw (ingestão) | tabela DuckDB | Substituição completa a partir de XLSX / CSV via contrato YAML |
 | Staging (`stg_*`) | view | Sempre reflete o raw mais recente; **não** use incremental |
 | Intermediate (`int_*`) | view | Promova a table só se o modelo ficar lento |
 | Dimensões (`dim_*`) | table | Rebuild completo é aceitável para aprendizado |
@@ -36,6 +46,13 @@ Os padrões das pastas staging / intermediate / marts estão em `dbt_project.yml
 - `UNION ALL` de `raw.itbi_YYYY` para os anos em `vars.itbi_years` ([`dbt_project.yml`](../dbt_project.yml))
 - Paridade de colunas entre anos é exigida antes do union (macro em compile-time + teste singular no `dbt test`)
 - Verifique com `DBT_PROFILES_DIR=. dbt run -s stg_itbi` e `dbt test`
+
+## Staging (`stg_cep_aberto`)
+
+- View sobre `raw.cep_aberto`; grain de uma linha por CEP
+- Mesma normalização de CEP com 8 dígitos e zero à esquerda que `stg_itbi`, para joins em `cep`
+- Trim / string vazia → null nos textos; cast de `id_cidade` / `id_bairro` para integer
+- Verifique com `DBT_PROFILES_DIR=. dbt run -s stg_cep_aberto` e `dbt test -s stg_cep_aberto`
 
 ## Fatos incrementais (decisão de aprendizado)
 

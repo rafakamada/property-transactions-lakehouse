@@ -1,8 +1,8 @@
 """Seed a minimal DuckDB `raw` schema for CI dbt run/test.
 
-Landing XLSX files are gitignored, so CI cannot run full ingest. This script
+Landing XLSX/CSV files are gitignored, so CI cannot run full ingest. This script
 creates `raw.itbi_YYYY` tables (matching `vars.itbi_years` / ingest column
-contract) with a few synthetic rows so `stg_itbi` and dbt tests can run.
+contract) and a tiny `raw.cep_aberto` so staging models and dbt tests can run.
 """
 
 from __future__ import annotations
@@ -20,6 +20,15 @@ DBT_PROJECT = ROOT / "dbt_project.yml"
 DB_PATH = ROOT / "data" / "dev.duckdb"
 
 METADATA = ("_source_file", "_source_sheet", "_loaded_at", "_reference_month")
+CEP_ABERTO_COLUMNS = (
+    "cep",
+    "logradouro",
+    "complemento",
+    "bairro",
+    "id_cidade",
+    "id_bairro",
+)
+CEP_ABERTO_METADATA = ("_source_file", "_loaded_at")
 
 
 def _itbi_years() -> list[int]:
@@ -144,6 +153,43 @@ def seed(db_path: Path = DB_PATH) -> None:
                 )
 
             print(f"seeded raw.{table} (2 rows)")
+
+        cep_col_defs = ", ".join(f'"{c}" VARCHAR' for c in CEP_ABERTO_COLUMNS)
+        cep_meta_defs = "_source_file VARCHAR, _loaded_at VARCHAR"
+        con.execute(
+            'CREATE OR REPLACE TABLE raw."cep_aberto" '
+            f"({cep_col_defs}, {cep_meta_defs})"
+        )
+        cep_rows = [
+            (
+                "01001000",
+                "Praça da Sé",
+                "- lado ímpar",
+                "Sé",
+                "8966",
+                "26",
+                "cep_aberto/sp.cepaberto_parte_1.csv",
+                loaded_at,
+            ),
+            (
+                "05093000",
+                "Rua Sample",
+                "",
+                "Sample Bairro",
+                "8966",
+                "99",
+                "cep_aberto/sp.cepaberto_parte_1.csv",
+                loaded_at,
+            ),
+        ]
+        placeholders = ", ".join("?" for _ in CEP_ABERTO_COLUMNS + CEP_ABERTO_METADATA)
+        quoted = ", ".join(f'"{c}"' for c in CEP_ABERTO_COLUMNS + CEP_ABERTO_METADATA)
+        for values in cep_rows:
+            con.execute(
+                f'INSERT INTO raw."cep_aberto" ({quoted}) VALUES ({placeholders})',
+                list(values),
+            )
+        print(f"seeded raw.cep_aberto ({len(cep_rows)} rows)")
     finally:
         con.close()
 

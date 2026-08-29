@@ -34,7 +34,7 @@ jobs:
       - name: dbt run
         env:
           DBT_PROFILES_DIR: .
-        run: uv run dbt run -s stg_itbi
+        run: uv run dbt run -s stg_itbi stg_cep_aberto
 
       - name: dbt test
         env:
