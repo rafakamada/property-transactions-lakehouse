@@ -21,7 +21,13 @@ year_{{ year }} as (
 )
 
 select
-    cast(n_cadastro_sql as varchar) as n_cadastro_sql,
+    -- Excel may store large SQLs as scientific notation (e.g. 2.6015E9). Expand
+    -- those via double→bigint; leave other strings alone to preserve leading zeros.
+    case
+        when upper(n_cadastro_sql) like '%E%'
+            then cast(cast(try_cast(n_cadastro_sql as double) as bigint) as varchar)
+        else cast(n_cadastro_sql as varchar)
+    end as n_cadastro_sql,
     nome_logradouro,
     try_cast(numero as integer) as numero,
     complemento,
@@ -40,7 +46,11 @@ select
         date '1899-12-30' + try_cast(data_transacao as integer)
     ) as data_transacao,
     try_cast(valor_venal_referencia as double) as valor_venal_referencia,
-    try_cast(proporcao_transmitida as double) as proporcao_transmitida,
+    case
+        when try_cast(proporcao_transmitida as double) between 0 and 100
+            then try_cast(proporcao_transmitida as double)
+        else null
+    end as proporcao_transmitida,
     try_cast(valor_venal_referencia_proporcional as double)
         as valor_venal_referencia_proporcional,
     try_cast(base_calculo_adotada as double) as base_calculo_adotada,
@@ -53,9 +63,9 @@ select
     try_cast(testada_m as double) as testada_m,
     try_cast(fracao_ideal as double) as fracao_ideal,
     try_cast(area_construida_m2 as double) as area_construida_m2,
-    cast(uso_iptu as varchar) as uso_iptu,
+    cast(cast(try_cast(uso_iptu as double) as bigint) as varchar) as uso_iptu,
     descricao_uso_iptu,
-    padrao_iptu,
+    cast(cast(try_cast(padrao_iptu as double) as bigint) as varchar) as padrao_iptu,
     descricao_padrao_iptu,
     acc_iptu,
     _source_file,
@@ -64,3 +74,7 @@ select
     try_cast(_reference_month as date) as _reference_month,
     source_year
 from unioned
+-- Drop rows that echo Portuguese column headers into data cells.
+where coalesce(natureza_transacao, '') <> 'Natureza de Transação'
+  and coalesce(situacao_sql, '') <> 'Situação do SQL'
+  and coalesce(tipo_financiamento, '') <> 'Tipo de Financiamento'

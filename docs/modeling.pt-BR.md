@@ -31,6 +31,8 @@ Os padrões das pastas staging / intermediate / marts estão em `dbt_project.yml
 
 - Renomeação mecânica snake_case dos cabeçalhos em português (acentos removidos; stop words `de` / `da` / `do` / `das` / `dos` descartadas)
 - Coerção de tipos a partir do VARCHAR da ingestão (datas, numéricos) e trim / string vazia → null
+- Limpeza de identificadores e códigos: expandir SQL em notação científica; remover sufixos float do Excel em `uso_iptu` / `padrao_iptu`; CEP com 8 dígitos e zero à esquerda; `proporcao_transmitida` fora de `[0, 100]` vira null
+- Remover linhas de lixo que ecoam cabeçalhos (rótulos de coluna em português vazados nas células)
 - `UNION ALL` de `raw.itbi_YYYY` para os anos em `vars.itbi_years` ([`dbt_project.yml`](../dbt_project.yml))
 - Paridade de colunas entre anos é exigida antes do union (macro em compile-time + teste singular no `dbt test`)
 - Verifique com `DBT_PROFILES_DIR=. dbt run -s stg_itbi` e `dbt test`
