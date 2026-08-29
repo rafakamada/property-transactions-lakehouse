@@ -23,7 +23,13 @@ Dump de CEP baixado de [CEP Aberto](https://www.cepaberto.com/) (partes do estad
 
 - Partes CSV sem cabeçalho (`sp.cepaberto_parte_*.csv`) são declaradas em `csv_datasets` em [`config/ingest_landing.yml`](../config/ingest_landing.yml) e unidas em `raw.cep_aberto`
 - Colunas na ingestão: `cep`, `logradouro`, `complemento`, `bairro`, `id_cidade`, `id_bairro`
-- **Por quê:** a coluna `bairro` do ITBI é bagunçada e pouco confiável. Vamos juntar o CEP Aberto pelo `cep` normalizado nas camadas seguintes (intermediate/marts) para corrigir ou enriquecer o bairro. O staging só prepara as chaves de CEP (`stg_cep_aberto` / `stg_itbi`).
+- **Por quê:** a coluna `bairro` do ITBI é bagunçada e pouco confiável. O CEP Aberto será juntado pelo `cep` normalizado nas camadas seguintes (intermediate/marts) para corrigir ou enriquecer o bairro. O staging só prepara as chaves de CEP (`stg_cep_aberto` / `stg_itbi`).
+
+### Por que não `dbt seed`
+
+ITBI e CEP Aberto **não** são carregados com [`dbt seed`](https://docs.getdbt.com/reference/commands/seed). Seeds servem para CSVs pequenos e versionados em `seeds/`. Estas fontes são grandes (XLSX de vários MB; ~300k linhas de CEP), ficam em `data/landing/` (gitignored) e precisam de um contrato YAML de ingestão (uniões de abas, colunas de CSV sem cabeçalho, metadados). O caminho é landing → `scripts/ingest_raw.py` → `raw` → `source('raw', ...)`.
+
+`seed-paths: [seeds]` permanece em `dbt_project.yml` para futuras tabelas de referência pequenas, se necessário. O CI também não executa `dbt seed`; linhas sintéticas em `raw` são criadas por [`scripts/seed_ci_raw.py`](../scripts/seed_ci_raw.py), porque os arquivos de landing não estão no git.
 
 ## Materializações por camada
 

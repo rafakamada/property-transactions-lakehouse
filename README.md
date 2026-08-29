@@ -59,6 +59,8 @@ uv run python scripts/ingest_raw.py
 
 Re-drop a year file when that year is updated or corrected; ingest replaces the corresponding `raw` tables for that file. Re-running also refreshes `raw.cep_aberto` from the CSV parts.
 
+[`dbt seed`](https://docs.getdbt.com/reference/commands/seed) is **not** used for ITBI or CEP Aberto (large, gitignored landing files + YAML ingest). See [docs/modeling.md](docs/modeling.md#why-not-dbt-seed).
+
 > **Tip:**  
 > When adding or updating a year spreadsheet, you can use the project skill  
 > **configure-itbi-landing** (`.cursor/skills/configure-itbi-landing/`) to walk through file copy/rename, YAML config, `_sources.yml` registration, and ingest steps.  
@@ -153,4 +155,5 @@ Pull requests and pushes to `master` run Ruff (check + format), pytest, then a
 minimal DuckDB raw seed (`scripts/seed_ci_raw.py`) plus
 `dbt run -s stg_itbi stg_cep_aberto` and `dbt test` via GitHub Actions
 (`.github/workflows/ci.yml`). Landing XLSX/CSV files are not in git; CI seeds
-synthetic `raw.itbi_YYYY` and `raw.cep_aberto` rows instead of full ingest.
+synthetic `raw.itbi_YYYY` and `raw.cep_aberto` rows via `scripts/seed_ci_raw.py`
+instead of full ingest or `dbt seed`.

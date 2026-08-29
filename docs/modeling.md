@@ -23,7 +23,13 @@ CEP dump downloaded from [CEP Aberto](https://www.cepaberto.com/) (São Paulo st
 
 - Headerless CSV parts (`sp.cepaberto_parte_*.csv`) are declared under `csv_datasets` in [`config/ingest_landing.yml`](../config/ingest_landing.yml) and unioned into `raw.cep_aberto`
 - Columns at ingest: `cep`, `logradouro`, `complemento`, `bairro`, `id_cidade`, `id_bairro`
-- **Why:** ITBI’s `bairro` (neighborhood) column is messy and unreliable. We will join CEP Aberto on normalized `cep` downstream (intermediate/marts) to fix or enrich neighborhood values. Staging only prepares matching CEP keys (`stg_cep_aberto` / `stg_itbi`).
+- **Why:** ITBI’s `bairro` (neighborhood) column is messy and unreliable. CEP Aberto will be joined on normalized `cep` downstream (intermediate/marts) to fix or enrich neighborhood values. Staging only prepares matching CEP keys (`stg_cep_aberto` / `stg_itbi`).
+
+### Why not `dbt seed`
+
+ITBI and CEP Aberto are **not** loaded with [`dbt seed`](https://docs.getdbt.com/reference/commands/seed). Seeds are for small, version-controlled CSVs checked into `seeds/`. These sources are large (multi‑MB XLSX; ~300k CEP rows), live under gitignored `data/landing/`, and need a YAML ingest contract (sheet unions, headerless CSV columns, metadata). Landing → `scripts/ingest_raw.py` → `raw` → `source('raw', ...)` is the path.
+
+`seed-paths: [seeds]` remains in `dbt_project.yml` for future tiny reference tables if needed. CI does not run `dbt seed` either; synthetic `raw` rows are created by [`scripts/seed_ci_raw.py`](../scripts/seed_ci_raw.py) because landing files are not in git.
 
 ## Layer materializations
 

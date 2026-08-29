@@ -8,6 +8,7 @@ only after confirmation (create the day at the top if missing). See `.cursor/rul
 
 ## 2026-08-29
 
+- **Document why landing ingest is used instead of `dbt seed`** — modeling + README (EN/pt-BR) note that large gitignored ITBI/CEP sources use `ingest_raw.py` / `seed_ci_raw.py`; passive voice in related copy.
 - **Add CEP Aberto to raw and staging** — extend ingest with `csv_datasets` for SP CEP dumps → `raw.cep_aberto`; add `stg_cep_aberto` with ITBI-matching CEP padding and grain tests; CI seed + docs note [cepaberto.com](https://www.cepaberto.com/) and messy ITBI `bairro` enrichment via CEP. Verify: `uv run pytest`, `uv run python scripts/ingest_raw.py`, `DBT_PROFILES_DIR=. dbt run -s stg_cep_aberto`, `dbt test -s stg_cep_aberto`
 - **Enforce stg_itbi identifier types** — cast `n_cadastro_sql`/`uso_iptu` to varchar, `numero`/`matricula_imovel` to integer, and normalize CEP to an 8-digit zero-padded string; document CEP in `schema.yml`; ignore local `analyses/*` scratch SQL.
 - **Add native dbt unit tests for casts** — fixture SQL under `tests/fixtures/` plus `test_stg_itbi_cast_fixtures` / `test_stg_itbi_cep_invalid_becomes_null`; pin `dbt-core>=1.12.3`. Verify: `DBT_PROFILES_DIR=. dbt test --select "test_type:unit"`

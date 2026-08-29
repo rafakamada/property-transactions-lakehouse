@@ -59,6 +59,8 @@ uv run python scripts/ingest_raw.py
 
 Substitua o arquivo do ano quando ele for atualizado ou corrigido; a ingestão troca as tabelas `raw` correspondentes àquele arquivo. Rodar de novo também atualiza `raw.cep_aberto` a partir das partes CSV.
 
+[`dbt seed`](https://docs.getdbt.com/reference/commands/seed) **não** é usado para ITBI nem CEP Aberto (arquivos grandes em landing, gitignored + contrato YAML). Veja [docs/modeling.pt-BR.md](docs/modeling.pt-BR.md#por-que-não-dbt-seed).
+
 > **Dica:**  
 > Ao adicionar ou atualizar a planilha de um ano, use a skill do projeto  
 > **configure-itbi-landing** (`.cursor/skills/configure-itbi-landing/`) para copiar/renomear o arquivo, atualizar o YAML, registrar em `_sources.yml` e rodar a ingestão.  
@@ -153,4 +155,5 @@ Pull requests e pushes para `master` rodam Ruff (check + format), pytest, depois
 seed mínimo do DuckDB raw (`scripts/seed_ci_raw.py`) mais
 `dbt run -s stg_itbi stg_cep_aberto` e `dbt test` via GitHub Actions
 (`.github/workflows/ci.yml`). Os XLSX/CSV de landing não estão no git; o CI semeia
-linhas sintéticas em `raw.itbi_YYYY` e `raw.cep_aberto` em vez da ingestão completa.
+linhas sintéticas em `raw.itbi_YYYY` e `raw.cep_aberto` via `scripts/seed_ci_raw.py`
+em vez da ingestão completa ou de `dbt seed`.

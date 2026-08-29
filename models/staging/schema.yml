@@ -35,7 +35,7 @@ models:
         description: >-
           Neighborhood of the property address. Filled automatically by the system from
           the SQL. Values are messy/unreliable in the ITBI source; planned enrichment
-          will join stg_cep_aberto on normalized cep to replace or correct this field
+          joins stg_cep_aberto on normalized cep to replace or correct this field
           downstream (not in staging).
       - name: referencia
         description: >-
