@@ -5,7 +5,10 @@ with
 {% for year in var('itbi_years') %}
 year_{{ year }} as (
     select
-        {{ select_slugified_columns(source('raw', 'itbi_' ~ year)) }},
+        {{ select_slugified_columns(
+            source('raw', 'itbi_' ~ year),
+            fallback_columns=var('itbi_raw_columns')
+        ) }},
         {{ year }} as source_year
     from {{ source('raw', 'itbi_' ~ year) }}
 ){% if not loop.last %},{% endif %}

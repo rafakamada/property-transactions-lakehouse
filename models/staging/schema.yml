@@ -200,8 +200,9 @@ unit_tests:
       Cast and normalize ITBI identifiers: leading-zero SQL preserved, scientific
       notation SQL expanded, uso/padrao float suffixes stripped, integer
       numero/matricula, and 8-digit zero-padded CEP. Fixtures mirror Portuguese
-      raw headers; select_slugified_columns runs for real. assert_itbi_schemas_match
-      is stubbed. Cast logic in stg_itbi final select is under test.
+      raw headers; select_slugified_columns uses var('itbi_raw_columns') when the
+      unit-test CTE is not introspectable. assert_itbi_schemas_match is stubbed.
+      Cast logic in stg_itbi final select is under test.
     model: stg_itbi
     overrides:
       macros:
