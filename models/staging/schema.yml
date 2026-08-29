@@ -37,7 +37,8 @@ models:
       - name: cep
         description: >-
           Postal code (CEP) of the street for the property address. Filled automatically
-          by the system from the SQL.
+          by the system from the SQL. Staging normalizes to an 8-digit zero-padded
+          string (e.g. 05093000).
       - name: natureza_transacao
         description: >-
           Type of legal transaction through which the property is being transferred
@@ -146,3 +147,67 @@ models:
               # Keep in sync with vars.itbi_years in dbt_project.yml
               arguments:
                 values: [2024, 2025, 2026]
+
+unit_tests:
+  - name: test_stg_itbi_cast_fixtures
+    description: >-
+      Cast and normalize ITBI identifiers: varchar cadastro/uso, integer
+      numero/matricula, and 8-digit zero-padded CEP from Excel-style floats
+      or 7-digit strings. Macro overrides skip introspective slugify/schema
+      guards; cast logic in stg_itbi final select is what is under test.
+    model: stg_itbi
+    overrides:
+      macros:
+        assert_itbi_schemas_match: ""
+        select_slugified_columns: "*"
+    given:
+      - input: source('raw', 'itbi_2024')
+        format: sql
+        fixture: stg_itbi_unit_test_cast_rows
+      - input: source('raw', 'itbi_2025')
+        format: sql
+        fixture: stg_itbi_unit_test_empty
+      - input: source('raw', 'itbi_2026')
+        format: sql
+        fixture: stg_itbi_unit_test_empty
+    expect:
+      format: dict
+      rows:
+        - nome_logradouro: fixture-street-a
+          n_cadastro_sql: "012345678901234"
+          numero: 42
+          cep: "05093000"
+          matricula_imovel: 987654
+          uso_iptu: "10"
+          source_year: 2024
+        - nome_logradouro: fixture-street-b
+          n_cadastro_sql: "202400099"
+          numero: 7
+          cep: "05036001"
+          matricula_imovel: 123456
+          uso_iptu: "20.0"
+          source_year: 2024
+
+  - name: test_stg_itbi_cep_invalid_becomes_null
+    description: Non-numeric CEP literals (e.g. header leak) become null after staging.
+    model: stg_itbi
+    overrides:
+      macros:
+        assert_itbi_schemas_match: ""
+        select_slugified_columns: "*"
+    given:
+      - input: source('raw', 'itbi_2024')
+        format: sql
+        fixture: stg_itbi_unit_test_invalid_cep
+      - input: source('raw', 'itbi_2025')
+        format: sql
+        fixture: stg_itbi_unit_test_empty
+      - input: source('raw', 'itbi_2026')
+        format: sql
+        fixture: stg_itbi_unit_test_empty
+    expect:
+      format: dict
+      rows:
+        - nome_logradouro: fixture-street-invalid-cep
+          cep: null
+          source_year: 2024

@@ -6,6 +6,11 @@ Dia mais recente primeiro. Uma seção por dia civil. Redija bullets neste arqui
 `ITERATION_LOG.md`, mostre o preview ao usuário e só então acrescente sob o cabeçalho
 de hoje após confirmação (crie o dia no topo se ainda não existir). Veja `.cursor/rules/commit-hygiene.mdc`.
 
+## 2026-08-29
+
+- **Forçar tipos de identificadores em stg_itbi** — cast de `n_cadastro_sql`/`uso_iptu` para varchar, `numero`/`matricula_imovel` para integer, e normalizar CEP para string de 8 dígitos com zero à esquerda; documentar CEP no `schema.yml`; ignorar SQL local em `analyses/*`.
+- **Adicionar unit tests nativos do dbt para casts** — fixtures SQL em `tests/fixtures/` mais `test_stg_itbi_cast_fixtures` / `test_stg_itbi_cep_invalid_becomes_null`; pin `dbt-core>=1.12.3`. Verificar: `DBT_PROFILES_DIR=. dbt test --select "test_type:unit"`
+
 ## 2026-08-07
 
 - **Adicionar camada de staging ITBI** — `stg_itbi` une `raw.itbi_YYYY` com slugify Jinja (stop words removidas), coerção de tipos e guards de schema; `schema.yml` + testes singulares; docs e `configure-itbi-landing` atualizados para `vars.itbi_years`. Verificar: `DBT_PROFILES_DIR=. dbt run -s stg_itbi`, `dbt test`

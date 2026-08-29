@@ -6,6 +6,11 @@ Newest day first. One section per calendar day. Draft bullets for both this file
 `ITERATION_LOG.pt-BR.md`, preview them to the user, then append under today’s heading
 only after confirmation (create the day at the top if missing). See `.cursor/rules/commit-hygiene.mdc`.
 
+## 2026-08-29
+
+- **Enforce stg_itbi identifier types** — cast `n_cadastro_sql`/`uso_iptu` to varchar, `numero`/`matricula_imovel` to integer, and normalize CEP to an 8-digit zero-padded string; document CEP in `schema.yml`; ignore local `analyses/*` scratch SQL.
+- **Add native dbt unit tests for casts** — fixture SQL under `tests/fixtures/` plus `test_stg_itbi_cast_fixtures` / `test_stg_itbi_cep_invalid_becomes_null`; pin `dbt-core>=1.12.3`. Verify: `DBT_PROFILES_DIR=. dbt test --select "test_type:unit"`
+
 ## 2026-08-07
 
 - **Add ITBI staging layer** — `stg_itbi` unions `raw.itbi_YYYY` with Jinja slugify (stop words dropped), type coercion, and schema-match guards; `schema.yml` + singular tests; docs and `configure-itbi-landing` updated for `vars.itbi_years`. Verify: `DBT_PROFILES_DIR=. dbt run -s stg_itbi`, `dbt test`
