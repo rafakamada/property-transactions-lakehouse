@@ -4,6 +4,8 @@ Português: [modeling.pt-BR.md](modeling.pt-BR.md)
 
 ## Source shape
 
+### ITBI (transactions)
+
 Public ITBI transaction downloads: [Prefeitura de São Paulo — Dados das Transações Imobiliárias](https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501).
 
 - One XLSX file per **year** in `data/landing/` as `YYYY.xlsx`
@@ -15,11 +17,25 @@ Public ITBI transaction downloads: [Prefeitura de São Paulo — Dados das Trans
 - Ingest loads raw with **full replace** per file (`CREATE OR REPLACE`); raw is never a dbt incremental model
 - Month cells are read as VARCHAR (`all_varchar`) so typing happens in staging
 
+### CEP Aberto (address reference)
+
+CEP dump downloaded from [CEP Aberto](https://www.cepaberto.com/) (São Paulo state parts under `data/landing/cep_aberto/`).
+
+- Headerless CSV parts (`sp.cepaberto_parte_*.csv`) are declared under `csv_datasets` in [`config/ingest_landing.yml`](../config/ingest_landing.yml) and unioned into `raw.cep_aberto`
+- Columns at ingest: `cep`, `logradouro`, `complemento`, `bairro`, `id_cidade`, `id_bairro`
+- **Why:** ITBI’s `bairro` (neighborhood) column is messy and unreliable. CEP Aberto will be joined on normalized `cep` downstream (intermediate/marts) to fix or enrich neighborhood values. Staging only prepares matching CEP keys (`stg_cep_aberto` / `stg_itbi`).
+
+### Why not `dbt seed`
+
+ITBI and CEP Aberto are **not** loaded with [`dbt seed`](https://docs.getdbt.com/reference/commands/seed). Seeds are for small, version-controlled CSVs checked into `seeds/`. These sources are large (multi‑MB XLSX; ~300k CEP rows), live under gitignored `data/landing/`, and need a YAML ingest contract (sheet unions, headerless CSV columns, metadata). Landing → `scripts/ingest_raw.py` → `raw` → `source('raw', ...)` is the path.
+
+`seed-paths: [seeds]` remains in `dbt_project.yml` for future tiny reference tables if needed. CI does not run `dbt seed` either; synthetic `raw` rows are created by [`scripts/seed_ci_raw.py`](../scripts/seed_ci_raw.py) because landing files are not in git.
+
 ## Layer materializations
 
 | Layer | Default | Notes |
 |-------|---------|--------|
-| Raw (ingest) | DuckDB table | Year-level replace from XLSX via YAML contract |
+| Raw (ingest) | DuckDB table | Full replace from landing XLSX / CSV via YAML contract |
 | Staging (`stg_*`) | view | Always reflect latest raw; do **not** use incremental |
 | Intermediate (`int_*`) | view | Promote to table only if a model is slow |
 | Dimensions (`dim_*`) | table | Full rebuild is fine for learning |
@@ -36,6 +52,13 @@ Defaults for staging / intermediate / marts folders are in `dbt_project.yml`. Fa
 - `UNION ALL` of `raw.itbi_YYYY` for years in `vars.itbi_years` ([`dbt_project.yml`](../dbt_project.yml))
 - Yearly column parity is enforced before union (compile-time macro + singular `dbt test`)
 - Verify with `DBT_PROFILES_DIR=. dbt run -s stg_itbi` and `dbt test`
+
+## Staging (`stg_cep_aberto`)
+
+- View over `raw.cep_aberto`; grain is one row per CEP
+- Same 8-digit zero-padded CEP normalization as `stg_itbi` so joins on `cep` match
+- Trim / empty-string → null on text fields; cast `id_cidade` / `id_bairro` to integer
+- Verify with `DBT_PROFILES_DIR=. dbt run -s stg_cep_aberto` and `dbt test -s stg_cep_aberto`
 
 ## Incremental facts (learning decision)
 

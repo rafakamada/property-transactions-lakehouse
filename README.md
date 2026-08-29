@@ -4,9 +4,11 @@ Português: [README.pt-BR.md](README.pt-BR.md)
 
 Learn DuckDB and dbt while analyzing property transaction data.
 
-**Public data source:** [Dados das Transações Imobiliárias com recolhimento de ITBI — Prefeitura de São Paulo](https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501) (yearly Excel/ODS downloads).
+**Public data sources:**
+- [Dados das Transações Imobiliárias com recolhimento de ITBI — Prefeitura de São Paulo](https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501) (yearly Excel/ODS downloads).
+- [CEP Aberto](https://www.cepaberto.com/) (collaborative CEP dump; used to fix messy ITBI `bairro` / neighborhood via CEP join).
 
-Pipeline: yearly landing XLSX (sheets = months + reference tabs) → DuckDB `raw` (full replace, config-driven) → dbt staging → intermediate → marts.
+Pipeline: yearly landing XLSX (sheets = months + reference tabs) and CEP Aberto CSVs → DuckDB `raw` (full replace, config-driven) → dbt staging → intermediate → marts.
 
 Modeling and incremental decisions: [docs/modeling.md](docs/modeling.md).  
 Ingest contract: [config/ingest_landing.yml](config/ingest_landing.yml).  
@@ -15,7 +17,7 @@ Progress log: [ITERATION_LOG.md](ITERATION_LOG.md) ([pt-BR](ITERATION_LOG.pt-BR.
 ## Contents
 
 - [Setup](#setup)
-- [Ingest XLSX into raw](#ingest-xlsx-into-raw)
+- [Ingest landing into raw](#ingest-landing-into-raw)
 - [Query DuckDB](#query-duckdb)
 - [dbt](#dbt)
 - [Formatting](#formatting)
@@ -32,7 +34,9 @@ cp .env.example .env   # sets DBT_PROFILES_DIR=.
 
 Requires [uv](https://docs.astral.sh/uv/) and Python 3.12.
 
-## Ingest XLSX into raw
+## Ingest landing into raw
+
+### ITBI (XLSX)
 
 1. Download a year file from the [Prefeitura portal](https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501).
 2. Rename/copy into `data/landing/YYYY.xlsx` (download filenames are unreliable).
@@ -40,13 +44,22 @@ Requires [uv](https://docs.astral.sh/uv/) and Python 3.12.
    - **Month sheets** (`MON-YYYY`) → unioned into `raw.itbi_YYYY`
    - **Other sheets** (LEGENDA, EXPLICAÇÕES, usos, padrões, …) → one table each with a year suffix
 4. Register new tables in `models/staging/_sources.yml`.
-5. Run:
+
+### CEP Aberto (CSV)
+
+1. Download the São Paulo dump from [CEP Aberto](https://www.cepaberto.com/) and place parts under `data/landing/cep_aberto/` (e.g. `sp.cepaberto_parte_*.csv`).
+2. Parts are already declared under `csv_datasets.cep_aberto` in [config/ingest_landing.yml](config/ingest_landing.yml) → unioned into `raw.cep_aberto`.
+3. ITBI `bairro` is messy; CEP Aberto supplies a cleaner neighborhood for later enrichment on normalized `cep`.
+
+### Run ingest
 
 ```bash
 uv run python scripts/ingest_raw.py
 ```
 
-Re-drop a year file when that year is updated or corrected; ingest replaces the corresponding `raw` tables for that file.
+Re-drop a year file when that year is updated or corrected; ingest replaces the corresponding `raw` tables for that file. Re-running also refreshes `raw.cep_aberto` from the CSV parts.
+
+[`dbt seed`](https://docs.getdbt.com/reference/commands/seed) is **not** used for ITBI or CEP Aberto (large, gitignored landing files + YAML ingest). See [docs/modeling.md](docs/modeling.md#why-not-dbt-seed).
 
 > **Tip:**  
 > When adding or updating a year spreadsheet, you can use the project skill  
@@ -139,6 +152,8 @@ uv run pytest
 ## CI
 
 Pull requests and pushes to `master` run Ruff (check + format), pytest, then a
-minimal DuckDB raw seed (`scripts/seed_ci_raw.py`) plus `dbt run -s stg_itbi` and
-`dbt test` via GitHub Actions (`.github/workflows/ci.yml`). Landing XLSX files are
-not in git; CI seeds synthetic `raw.itbi_YYYY` rows instead of full ingest.
+minimal DuckDB raw seed (`scripts/seed_ci_raw.py`) plus
+`dbt run -s stg_itbi stg_cep_aberto` and `dbt test` via GitHub Actions
+(`.github/workflows/ci.yml`). Landing XLSX/CSV files are not in git; CI seeds
+synthetic `raw.itbi_YYYY` and `raw.cep_aberto` rows via `scripts/seed_ci_raw.py`
+instead of full ingest or `dbt seed`.

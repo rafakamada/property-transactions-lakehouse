@@ -1,4 +1,4 @@
-"""Ingest landing XLSX files into DuckDB schema `raw` using a YAML contract.
+"""Ingest landing files into DuckDB schema `raw` using a YAML contract.
 
 Usage:
     uv run python scripts/ingest_raw.py
@@ -6,8 +6,9 @@ Usage:
 Place yearly `.xlsx` / `.xlsm` files in `data/landing/` as `YYYY.xlsx` and
 declare their sheets in `config/ingest_landing.yml`. Month sheets are unioned
 into one transaction table per year; every other declared sheet becomes its
-own year-suffixed table. Re-running replaces tables for that file (full
-replace — not incremental). See docs/modeling.md.
+own year-suffixed table. CSV datasets (e.g. CEP Aberto) are declared under
+`csv_datasets` and unioned into one table each. Re-running replaces tables
+(full replace — not incremental). See docs/modeling.md.
 """
 
 from __future__ import annotations
@@ -102,10 +103,21 @@ class IngestDefaults:
 
 
 @dataclass(frozen=True)
+class CsvDatasetConfig:
+    key: str
+    table: str
+    glob: str
+    header: bool = False
+    all_varchar: bool = True
+    columns: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class IngestConfig:
     version: int
     defaults: IngestDefaults
     files: dict[str, FileConfig]
+    csv_datasets: dict[str, CsvDatasetConfig] = field(default_factory=dict)
 
 
 def find_excel_files(landing_dir: Path) -> list[Path]:
@@ -195,6 +207,26 @@ def _parse_file_config(filename: str, raw: dict[str, Any]) -> FileConfig:
     )
 
 
+def _parse_csv_dataset(key: str, raw: dict[str, Any]) -> CsvDatasetConfig:
+    required = ("table", "glob", "columns")
+    missing = [field_name for field_name in required if field_name not in raw]
+    if missing:
+        raise IngestConfigError(
+            f"csv_datasets.{key}: missing required keys: {', '.join(missing)}"
+        )
+    columns = raw.get("columns") or []
+    if not columns:
+        raise IngestConfigError(f"csv_datasets.{key}: columns must be non-empty")
+    return CsvDatasetConfig(
+        key=key,
+        table=str(raw["table"]),
+        glob=str(raw["glob"]),
+        header=bool(raw.get("header", False)),
+        all_varchar=bool(raw.get("all_varchar", True)),
+        columns=tuple(str(col) for col in columns),
+    )
+
+
 def load_ingest_config(path: Path) -> IngestConfig:
     if not path.exists():
         raise IngestConfigError(f"ingest config not found: {path}")
@@ -222,8 +254,11 @@ def load_ingest_config(path: Path) -> IngestConfig:
     )
 
     files_raw = raw.get("files") or {}
-    if not files_raw:
-        raise IngestConfigError("files: must declare at least one landing file")
+    csv_raw = raw.get("csv_datasets") or {}
+    if not files_raw and not csv_raw:
+        raise IngestConfigError(
+            "files: or csv_datasets: must declare at least one landing source"
+        )
 
     files = {
         filename: _parse_file_config(filename, file_raw)
@@ -241,7 +276,17 @@ def load_ingest_config(path: Path) -> IngestConfig:
         )
         raise IngestConfigError(f"multiple files claim the same year: {detail}")
 
-    return IngestConfig(version=version, defaults=defaults, files=files)
+    csv_datasets = {
+        key: _parse_csv_dataset(key, dataset_raw)
+        for key, dataset_raw in csv_raw.items()
+    }
+
+    return IngestConfig(
+        version=version,
+        defaults=defaults,
+        files=files,
+        csv_datasets=csv_datasets,
+    )
 
 
 def resolve_month_header(sheet_name: str, month_cfg: MonthSheetsConfig) -> bool:
@@ -484,6 +529,82 @@ def ingest_file(
     return created
 
 
+def resolve_csv_paths(landing_dir: Path, dataset: CsvDatasetConfig) -> list[Path]:
+    paths = sorted(landing_dir.glob(dataset.glob))
+    if not paths:
+        raise IngestConfigError(
+            f"csv_datasets.{dataset.key}: no files matched "
+            f"{dataset.glob!r} under {landing_dir}"
+        )
+    non_files = [str(p) for p in paths if not p.is_file()]
+    if non_files:
+        raise IngestConfigError(
+            f"csv_datasets.{dataset.key}: glob matched non-files: "
+            f"{', '.join(non_files)}"
+        )
+    return paths
+
+
+def _csv_select_sql(
+    *,
+    path: Path,
+    dataset: CsvDatasetConfig,
+    source_file: str,
+    loaded_at: str,
+) -> str:
+    options = [
+        f"header := {'true' if dataset.header else 'false'}",
+        f"all_varchar := {'true' if dataset.all_varchar else 'false'}",
+        # CEP Aberto dumps use RFC-style "" escapes inside quoted fields.
+        "quote := '\"'",
+        "escape := '\"'",
+    ]
+    if not dataset.header:
+        # Name headerless columns from the contract (DuckDB columns := {name: type}).
+        columns_map = ", ".join(
+            f"{_sql_string_literal(col)}: {_sql_string_literal('VARCHAR')}"
+            for col in dataset.columns
+        )
+        options.append(f"columns := {{{columns_map}}}")
+    reader = f"read_csv({_sql_string_literal(str(path))}, {', '.join(options)})"
+    if dataset.header:
+        # Restrict to contracted column names when the file carries a header row.
+        projected = ", ".join(_quoted_ident(col) for col in dataset.columns)
+        body = f"SELECT {projected} FROM {reader}"
+    else:
+        body = f"SELECT * FROM {reader}"
+    return f"""
+    SELECT
+        src.*,
+        {_sql_string_literal(source_file)} AS _source_file,
+        {_sql_string_literal(loaded_at)} AS _loaded_at
+    FROM ({body}) AS src
+    """
+
+
+def ingest_csv_dataset(
+    con: duckdb.DuckDBPyConnection,
+    landing_dir: Path,
+    dataset: CsvDatasetConfig,
+    loaded_at: str,
+) -> str:
+    paths = resolve_csv_paths(landing_dir, dataset)
+    selects = [
+        _csv_select_sql(
+            path=path,
+            dataset=dataset,
+            source_file=str(path.relative_to(landing_dir)),
+            loaded_at=loaded_at,
+        )
+        for path in paths
+    ]
+    union_sql = "\nUNION ALL\n".join(f"({select})" for select in selects)
+    table = dataset.table
+    con.execute(f"CREATE OR REPLACE TABLE raw.{_quoted_ident(table)} AS {union_sql}")
+    print(f"ingested csv_datasets.{dataset.key} -> raw.{table} ({len(paths)} file(s))")
+    return f"raw.{table}"
+
+
 def resolve_table_names(files: list[Path]) -> dict[Path, str]:
     """Legacy helper: map each file stem to a sanitized table name, or raise."""
     by_table: dict[str, list[Path]] = {}
@@ -511,6 +632,7 @@ def ingest(
     db_path: Path,
     config: IngestConfig | None = None,
     config_path: Path = CONFIG_PATH,
+    landing_dir: Path = LANDING_DIR,
 ) -> list[str]:
     if config is None:
         config = load_ingest_config(config_path)
@@ -522,11 +644,11 @@ def ingest(
             + ", ".join(missing_config)
         )
 
-    for filename, file_cfg in config.files.items():
+    for filename in config.files:
         if filename not in {path.name for path in files}:
             print(f"warning: config entry {filename} has no file in landing; skipping")
 
-    # Detect colliding target table names across the files we will ingest.
+    # Detect colliding target table names across Excel + CSV ingest targets.
     targets: dict[str, list[str]] = {}
     for path in files:
         file_cfg = config.files[path.name]
@@ -534,6 +656,8 @@ def ingest(
         for sheet_name, other_cfg in file_cfg.other_sheets.items():
             table = other_sheet_table_name(sheet_name, file_cfg.year, other_cfg.table)
             targets.setdefault(table, []).append(f"{path.name}:{sheet_name}")
+    for dataset in config.csv_datasets.values():
+        targets.setdefault(dataset.table, []).append(f"csv_datasets.{dataset.key}")
     collisions = {table: srcs for table, srcs in targets.items() if len(srcs) > 1}
     if collisions:
         detail = "; ".join(
@@ -544,17 +668,23 @@ def ingest(
             f"distinct ingest targets resolve to the same table name: {detail}"
         )
 
+    if not files and not config.csv_datasets:
+        raise IngestConfigError("nothing to ingest: no Excel files and no csv_datasets")
+
     db_path.parent.mkdir(parents=True, exist_ok=True)
     con = duckdb.connect(str(db_path))
     created: list[str] = []
     try:
-        con.execute("INSTALL excel;")
-        con.execute("LOAD excel;")
+        if files:
+            con.execute("INSTALL excel;")
+            con.execute("LOAD excel;")
         con.execute("CREATE SCHEMA IF NOT EXISTS raw;")
         loaded_at = datetime.now(UTC).isoformat()
         for path in files:
             file_cfg = config.files[path.name]
             created.extend(ingest_file(con, path, file_cfg, config.defaults, loaded_at))
+        for dataset in config.csv_datasets.values():
+            created.append(ingest_csv_dataset(con, landing_dir, dataset, loaded_at))
     finally:
         con.close()
     return created
@@ -565,16 +695,22 @@ def main() -> int:
         print(f"error: landing directory not found: {LANDING_DIR}", file=sys.stderr)
         return 1
 
+    try:
+        config = load_ingest_config(CONFIG_PATH)
+    except IngestConfigError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
     files = find_excel_files(LANDING_DIR)
-    if not files:
+    if not files and not config.csv_datasets:
         print(
-            f"error: no .xlsx/.xlsm files found in {LANDING_DIR}",
+            f"error: no .xlsx/.xlsm files and no csv_datasets in {LANDING_DIR}",
             file=sys.stderr,
         )
         return 1
 
     try:
-        created = ingest(files, DB_PATH)
+        created = ingest(files, DB_PATH, config=config)
     except (IngestConfigError, TableNameCollisionError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

@@ -34,7 +34,9 @@ models:
       - name: bairro
         description: >-
           Neighborhood of the property address. Filled automatically by the system from
-          the SQL.
+          the SQL. Values are messy/unreliable in the ITBI source; planned enrichment
+          joins stg_cep_aberto on normalized cep to replace or correct this field
+          downstream (not in staging).
       - name: referencia
         description: >-
           Address reference for the property. IPTU-base field (not part of the DTI).
@@ -42,7 +44,7 @@ models:
         description: >-
           Postal code (CEP) of the street for the property address. Filled automatically
           by the system from the SQL. Staging normalizes to an 8-digit zero-padded
-          string (e.g. 05093000).
+          string (e.g. 05093000). Join key for CEP Aberto enrichment.
       - name: natureza_transacao
         description: >-
           Type of legal transaction through which the property is being transferred
@@ -155,19 +157,56 @@ models:
               arguments:
                 values: [2024, 2025, 2026]
 
+  - name: stg_cep_aberto
+    description: >-
+      São Paulo CEP Aberto address reference (https://www.cepaberto.com/).
+      Grain: one row per CEP. Staging normalizes CEP to the same 8-digit zero-padded
+      string as stg_itbi for joins. Intended to fix/enrich messy ITBI bairro
+      (neighborhood) values downstream via cep.
+    columns:
+      - name: cep
+        description: >-
+          Postal code normalized to an 8-digit zero-padded string (same as stg_itbi.cep).
+        data_tests:
+          - unique
+          - not_null
+      - name: logradouro
+        description: Street / thoroughfare name from CEP Aberto.
+      - name: complemento
+        description: Address complement (e.g. odd/even side) from CEP Aberto.
+      - name: bairro
+        description: >-
+          Neighborhood name from CEP Aberto. Preferred over ITBI bairro for enrichment.
+      - name: id_cidade
+        description: CEP Aberto city identifier.
+        data_tests:
+          - not_null
+      - name: id_bairro
+        description: CEP Aberto neighborhood identifier.
+        data_tests:
+          - not_null
+      - name: _source_file
+        description: Landing CSV path relative to data/landing/ from ingest.
+        data_tests:
+          - not_null
+      - name: _loaded_at
+        description: Ingest timestamp.
+        data_tests:
+          - not_null
+
 unit_tests:
   - name: test_stg_itbi_cast_fixtures
     description: >-
       Cast and normalize ITBI identifiers: leading-zero SQL preserved, scientific
       notation SQL expanded, uso/padrao float suffixes stripped, integer
-      numero/matricula, and 8-digit zero-padded CEP. Macro overrides skip
-      introspective slugify/schema guards; cast logic in stg_itbi final select
-      is what is under test.
+      numero/matricula, and 8-digit zero-padded CEP. Fixtures mirror Portuguese
+      raw headers; select_slugified_columns uses var('itbi_raw_columns') when the
+      unit-test CTE is not introspectable. assert_itbi_schemas_match is stubbed.
+      Cast logic in stg_itbi final select is under test.
     model: stg_itbi
     overrides:
       macros:
         assert_itbi_schemas_match: ""
-        select_slugified_columns: "*"
     given:
       - input: source('raw', 'itbi_2024')
         format: sql
@@ -212,7 +251,6 @@ unit_tests:
     overrides:
       macros:
         assert_itbi_schemas_match: ""
-        select_slugified_columns: "*"
     given:
       - input: source('raw', 'itbi_2024')
         format: sql
@@ -238,7 +276,6 @@ unit_tests:
     overrides:
       macros:
         assert_itbi_schemas_match: ""
-        select_slugified_columns: "*"
     given:
       - input: source('raw', 'itbi_2024')
         format: sql
@@ -264,7 +301,6 @@ unit_tests:
     overrides:
       macros:
         assert_itbi_schemas_match: ""
-        select_slugified_columns: "*"
     given:
       - input: source('raw', 'itbi_2024')
         format: sql

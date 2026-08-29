@@ -1,6 +1,7 @@
-# Landing XLSX → DuckDB raw ingest contract.
+# Landing → DuckDB raw ingest contract (XLSX + CSV datasets).
 # See docs/modeling.md and .cursor/skills/configure-itbi-landing/
-# Public data: https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501
+# ITBI: https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501
+# CEP Aberto: https://www.cepaberto.com/
 
 version: 1
 
@@ -95,3 +96,18 @@ files:
         table: tabela_de_usos_2026
       "Tabela de PADRÕES":
         table: tabela_de_padroes_2026
+
+# Headerless CSV dumps under data/landing/ (paths relative to landing).
+csv_datasets:
+  cep_aberto:
+    table: cep_aberto
+    glob: "cep_aberto/sp.cepaberto_parte_*.csv"
+    header: false
+    all_varchar: true
+    columns:
+      - cep
+      - logradouro
+      - complemento
+      - bairro
+      - id_cidade
+      - id_bairro

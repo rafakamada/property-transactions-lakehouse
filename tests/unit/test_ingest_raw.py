@@ -136,6 +136,38 @@ def test_load_ingest_config_ok(tmp_path: Path) -> None:
     assert config.defaults.transaction_range == "A1:AB"
     assert config.files["2024.xlsx"].year == 2024
     assert config.files["2024.xlsx"].month_sheets.overrides["JAN-2024"].header is False
+    assert config.csv_datasets == {}
+
+
+def test_load_ingest_config_csv_datasets(tmp_path: Path) -> None:
+    path = tmp_path / "ingest_landing.yml"
+    raw = _minimal_config_dict()
+    raw["csv_datasets"] = {
+        "cep_aberto": {
+            "table": "cep_aberto",
+            "glob": "cep_aberto/*.csv",
+            "header": False,
+            "all_varchar": True,
+            "columns": [
+                "cep",
+                "logradouro",
+                "complemento",
+                "bairro",
+                "id_cidade",
+                "id_bairro",
+            ],
+        }
+    }
+    path.write_text(yaml.dump(raw), encoding="utf-8")
+
+    config = load_ingest_config(path)
+
+    dataset = config.csv_datasets["cep_aberto"]
+    assert dataset.table == "cep_aberto"
+    assert dataset.glob == "cep_aberto/*.csv"
+    assert dataset.header is False
+    assert dataset.columns[0] == "cep"
+    assert dataset.columns[-1] == "id_bairro"
 
 
 def test_load_ingest_config_rejects_bad_version(tmp_path: Path) -> None:
@@ -240,3 +272,72 @@ def test_classify_workbook_sheets_missing_other() -> None:
     )
     with pytest.raises(IngestConfigError, match="missing from workbook"):
         classify_workbook_sheets(["JAN-2024", "LEGENDA"], file_cfg)
+
+
+def test_resolve_csv_paths_and_ingest_union(tmp_path: Path) -> None:
+    from ingest_raw import CsvDatasetConfig, ingest_csv_dataset, resolve_csv_paths
+
+    landing = tmp_path / "landing"
+    cep_dir = landing / "cep_aberto"
+    cep_dir.mkdir(parents=True)
+    (cep_dir / "sp.cepaberto_parte_1.csv").write_text(
+        "01001000,Praça da Sé,- lado ímpar,Sé,8966,26\n",
+        encoding="utf-8",
+    )
+    (cep_dir / "sp.cepaberto_parte_2.csv").write_text(
+        '01001001,Praça da Sé,- lado par,"Sítios ""Rober""",8966,26\n',
+        encoding="utf-8",
+    )
+
+    dataset = CsvDatasetConfig(
+        key="cep_aberto",
+        table="cep_aberto",
+        glob="cep_aberto/sp.cepaberto_parte_*.csv",
+        header=False,
+        all_varchar=True,
+        columns=(
+            "cep",
+            "logradouro",
+            "complemento",
+            "bairro",
+            "id_cidade",
+            "id_bairro",
+        ),
+    )
+    paths = resolve_csv_paths(landing, dataset)
+    assert [p.name for p in paths] == [
+        "sp.cepaberto_parte_1.csv",
+        "sp.cepaberto_parte_2.csv",
+    ]
+
+    import duckdb
+
+    db_path = tmp_path / "test.duckdb"
+    con = duckdb.connect(str(db_path))
+    try:
+        con.execute("CREATE SCHEMA raw")
+        table = ingest_csv_dataset(con, landing, dataset, "2026-01-01T00:00:00+00:00")
+        assert table == "raw.cep_aberto"
+        rows = con.execute(
+            "SELECT cep, bairro, _source_file FROM raw.cep_aberto ORDER BY cep"
+        ).fetchall()
+    finally:
+        con.close()
+
+    assert rows == [
+        ("01001000", "Sé", "cep_aberto/sp.cepaberto_parte_1.csv"),
+        ("01001001", 'Sítios "Rober"', "cep_aberto/sp.cepaberto_parte_2.csv"),
+    ]
+
+
+def test_resolve_csv_paths_missing(tmp_path: Path) -> None:
+    from ingest_raw import CsvDatasetConfig, resolve_csv_paths
+
+    dataset = CsvDatasetConfig(
+        key="cep_aberto",
+        table="cep_aberto",
+        glob="cep_aberto/*.csv",
+        columns=("cep",),
+    )
+    with pytest.raises(IngestConfigError, match="no files matched"):
+        resolve_csv_paths(tmp_path, dataset)

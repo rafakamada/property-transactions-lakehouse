@@ -4,9 +4,10 @@ sources:
   - name: raw
     schema: raw
     description: >-
-      As-ingested ITBI XLSX tables from the Prefeitura de São Paulo portal
-      (https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501).
-      Column names and types preserved from source files (varchar via ingest).
+      As-ingested landing tables. ITBI XLSX from the Prefeitura de São Paulo portal
+      (https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501) and
+      CEP Aberto CSV dumps (https://www.cepaberto.com/). Column names and types
+      preserved from source files (varchar via ingest).
     tables:
       - name: itbi_2024
         description: Union of 2024 month sheets (payment-month reference in _reference_month).
@@ -26,3 +27,8 @@ sources:
       - name: tabela_de_padroes_2024
       - name: tabela_de_padroes_2025
       - name: tabela_de_padroes_2026
+      - name: cep_aberto
+        description: >-
+          Union of São Paulo state CEP Aberto CSV parts under data/landing/cep_aberto/.
+          Headerless dump columns renamed at ingest (cep, logradouro, complemento,
+          bairro, id_cidade, id_bairro). Downloaded from https://www.cepaberto.com/.

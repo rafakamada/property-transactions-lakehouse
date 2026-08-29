@@ -14,6 +14,42 @@ clean-targets: [target, dbt_packages]
 vars:
   # Years included in stg_itbi union (raw.itbi_YYYY). Bump when adding a landing year.
   itbi_years: [2024, 2025, 2026]
+  # Ordered raw ITBI columns (business + ingest metadata). Keep in sync with
+  # config/ingest_landing.yml transaction_columns + ingest metadata. Used when
+  # select_slugified_columns cannot introspect (dbt-core unit-test CTEs).
+  itbi_raw_columns:
+    - "N° do Cadastro (SQL)"
+    - "Nome do Logradouro"
+    - "Número"
+    - "Complemento"
+    - "Bairro"
+    - "Referência"
+    - "CEP"
+    - "Natureza de Transação"
+    - "Valor de Transação (declarado pelo contribuinte)"
+    - "Data de Transação"
+    - "Valor Venal de Referência"
+    - "Proporção Transmitida (%)"
+    - "Valor Venal de Referência (proporcional)"
+    - "Base de Cálculo adotada"
+    - "Tipo de Financiamento"
+    - "Valor Financiado"
+    - "Cartório de Registro"
+    - "Matrícula do Imóvel"
+    - "Situação do SQL"
+    - "Área do Terreno (m2)"
+    - "Testada (m)"
+    - "Fração Ideal"
+    - "Área Construída (m2)"
+    - "Uso (IPTU)"
+    - "Descrição do uso (IPTU)"
+    - "Padrão (IPTU)"
+    - "Descrição do padrão (IPTU)"
+    - "ACC (IPTU)"
+    - "_source_file"
+    - "_source_sheet"
+    - "_loaded_at"
+    - "_reference_month"
 
 models:
   property_transactions_lakehouse:
