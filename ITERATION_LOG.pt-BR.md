@@ -8,6 +8,7 @@ de hoje após confirmação (crie o dia no topo se ainda não existir). Veja `.c
 
 ## 2026-08-29
 
+- **Usar `dbt_project.yml` para views de staging** — remover `{{ config(materialized='view') }}` redundante de `stg_itbi` / `stg_cep_aberto`; corrigir unit tests no Fusion com fixtures nos cabeçalhos portugueses do raw e `select_slugified_columns` real. Verificar: `DBT_PROFILES_DIR=. dbt test -s stg_itbi stg_cep_aberto`
 - **Documentar por que a ingestão via landing é usada em vez de `dbt seed`** — modeling + README (EN/pt-BR) registram que fontes grandes e gitignored de ITBI/CEP usam `ingest_raw.py` / `seed_ci_raw.py`; voz passiva no texto relacionado.
 - **Adicionar CEP Aberto ao raw e staging** — estender a ingestão com `csv_datasets` para dumps de CEP de SP → `raw.cep_aberto`; adicionar `stg_cep_aberto` com CEP no mesmo formato do ITBI e testes de grain; seed de CI + docs citam [cepaberto.com](https://www.cepaberto.com/) e o enriquecimento do `bairro` bagunçado do ITBI via CEP. Verificar: `uv run pytest`, `uv run python scripts/ingest_raw.py`, `DBT_PROFILES_DIR=. dbt run -s stg_cep_aberto`, `dbt test -s stg_cep_aberto`
 - **Forçar tipos de identificadores em stg_itbi** — cast de `n_cadastro_sql`/`uso_iptu` para varchar, `numero`/`matricula_imovel` para integer, e normalizar CEP para string de 8 dígitos com zero à esquerda; documentar CEP no `schema.yml`; ignorar SQL local em `analyses/*`.

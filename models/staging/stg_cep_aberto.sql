@@ -1,5 +1,3 @@
-{{ config(materialized='view') }}
-
 select
     lpad(
         cast(cast(try_cast(cep as double) as bigint) as varchar),

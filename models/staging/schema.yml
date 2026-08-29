@@ -199,14 +199,13 @@ unit_tests:
     description: >-
       Cast and normalize ITBI identifiers: leading-zero SQL preserved, scientific
       notation SQL expanded, uso/padrao float suffixes stripped, integer
-      numero/matricula, and 8-digit zero-padded CEP. Macro overrides skip
-      introspective slugify/schema guards; cast logic in stg_itbi final select
-      is what is under test.
+      numero/matricula, and 8-digit zero-padded CEP. Fixtures mirror Portuguese
+      raw headers; select_slugified_columns runs for real. assert_itbi_schemas_match
+      is stubbed. Cast logic in stg_itbi final select is under test.
     model: stg_itbi
     overrides:
       macros:
         assert_itbi_schemas_match: ""
-        select_slugified_columns: "*"
     given:
       - input: source('raw', 'itbi_2024')
         format: sql
@@ -251,7 +250,6 @@ unit_tests:
     overrides:
       macros:
         assert_itbi_schemas_match: ""
-        select_slugified_columns: "*"
     given:
       - input: source('raw', 'itbi_2024')
         format: sql
@@ -277,7 +275,6 @@ unit_tests:
     overrides:
       macros:
         assert_itbi_schemas_match: ""
-        select_slugified_columns: "*"
     given:
       - input: source('raw', 'itbi_2024')
         format: sql
@@ -303,7 +300,6 @@ unit_tests:
     overrides:
       macros:
         assert_itbi_schemas_match: ""
-        select_slugified_columns: "*"
     given:
       - input: source('raw', 'itbi_2024')
         format: sql

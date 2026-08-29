@@ -1,5 +1,3 @@
-{{ config(materialized='view') }}
-
 {# Fail compile if yearly raw.itbi_* schemas diverge before UNION ALL. #}
 {{ assert_itbi_schemas_match() }}
 
