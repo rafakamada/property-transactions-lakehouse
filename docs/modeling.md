@@ -31,6 +31,8 @@ Defaults for staging / intermediate / marts folders are in `dbt_project.yml`. Fa
 
 - Mechanical snake_case rename of Portuguese headers (accents stripped; stop words `de` / `da` / `do` / `das` / `dos` dropped)
 - Type coercion from ingest VARCHAR (dates, numerics) plus trim / empty-string → null
+- Identifier and code cleanup: expand scientific-notation SQL; strip Excel float suffixes on `uso_iptu` / `padrao_iptu`; 8-digit zero-padded CEP; null `proporcao_transmitida` outside `[0, 100]`
+- Drop header-echo junk rows (Portuguese column labels leaked into data cells)
 - `UNION ALL` of `raw.itbi_YYYY` for years in `vars.itbi_years` ([`dbt_project.yml`](../dbt_project.yml))
 - Yearly column parity is enforced before union (compile-time macro + singular `dbt test`)
 - Verify with `DBT_PROFILES_DIR=. dbt run -s stg_itbi` and `dbt test`

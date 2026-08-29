@@ -10,6 +10,7 @@ de hoje após confirmação (crie o dia no topo se ainda não existir). Veja `.c
 
 - **Forçar tipos de identificadores em stg_itbi** — cast de `n_cadastro_sql`/`uso_iptu` para varchar, `numero`/`matricula_imovel` para integer, e normalizar CEP para string de 8 dígitos com zero à esquerda; documentar CEP no `schema.yml`; ignorar SQL local em `analyses/*`.
 - **Adicionar unit tests nativos do dbt para casts** — fixtures SQL em `tests/fixtures/` mais `test_stg_itbi_cast_fixtures` / `test_stg_itbi_cep_invalid_becomes_null`; pin `dbt-core>=1.12.3`. Verificar: `DBT_PROFILES_DIR=. dbt test --select "test_type:unit"`
+- **Endurecer casts e filtros de lixo em stg_itbi** — expandir SQL em notação científica; remover sufixos float do Excel em `uso_iptu`/`padrao_iptu`; anular `proporcao_transmitida` fora de `[0, 100]`; remover linhas que ecoam cabeçalhos; ampliar fixtures de unit test. Verificar: `DBT_PROFILES_DIR=. dbt test --select "test_type:unit"`, `dbt run -s stg_itbi`, `dbt test`
 
 ## 2026-08-07
 

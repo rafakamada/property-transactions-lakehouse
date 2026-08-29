@@ -6,7 +6,9 @@ models:
       Cleaned ITBI transactions across configured years (vars.itbi_years).
       Grain: one row per raw month-sheet transaction row (not a business unique key).
       Renames Portuguese headers via mechanical slugify (accents stripped; stop words
-      de/da/do/das/dos dropped); trims empty strings to null; coerces dates and numerics.
+      de/da/do/das/dos dropped); trims empty strings to null; coerces dates and numerics;
+      normalizes SQL / IPTU codes / CEP; nulls proporção outside [0, 100]; drops
+      header-echo junk rows.
       Column descriptions follow the Prefeitura field dictionary on the workbook
       EXPLICAÇÕES sheet (raw.explicacoes_*). The LEGENDA sheet only labels data origin
       (ITBI base / IPTU base / calculated) and is not ingested as field docs.
@@ -15,6 +17,8 @@ models:
         description: >-
           Number that uniquely identifies the property in the IPTU fiscal cadastre
           (Cadastro Imobiliário Fiscal). Declared by the taxpayer (N° do Cadastro / SQL).
+          Staging keeps plain digit strings as-is (including leading zeros); Excel
+          scientific notation (e.g. 2.6015E9) is expanded to a canonical digit string.
       - name: nome_logradouro
         description: >-
           Street name of the property address (street, alley, square, avenue, etc.).
@@ -58,7 +62,8 @@ models:
       - name: proporcao_transmitida
         description: >-
           Share of the property being transferred (percent). Declared by the taxpayer;
-          100% when the entire property is transferred.
+          100% when the entire property is transferred. Staging keeps the percent scale
+          as-is (including tiny shares such as 0.01); values outside [0, 100] become null.
       - name: valor_venal_referencia_proporcional
         description: >-
           Reference market value × transmitted proportion (BRL). Compared to the
@@ -106,7 +111,8 @@ models:
       - name: uso_iptu
         description: >-
           Code for the property's predominant use. IPTU-base field; domain in Tabela
-          de USOS.
+          de USOS. Staging normalizes Excel float-style codes (e.g. 20.0) to an
+          integer-like string (20); non-numeric values become null.
       - name: descricao_uso_iptu
         description: >-
           Description of the property's predominant use, looked up from the use code
@@ -114,7 +120,8 @@ models:
       - name: padrao_iptu
         description: >-
           Code for construction type and standard. IPTU-base field; domain in Tabela
-          de PADRÕES.
+          de PADRÕES. Staging normalizes Excel float-style codes (e.g. 11.0) to an
+          integer-like string (11); non-numeric values become null.
       - name: descricao_padrao_iptu
         description: >-
           Description of construction type/standard, looked up from the code via
@@ -151,10 +158,11 @@ models:
 unit_tests:
   - name: test_stg_itbi_cast_fixtures
     description: >-
-      Cast and normalize ITBI identifiers: varchar cadastro/uso, integer
-      numero/matricula, and 8-digit zero-padded CEP from Excel-style floats
-      or 7-digit strings. Macro overrides skip introspective slugify/schema
-      guards; cast logic in stg_itbi final select is what is under test.
+      Cast and normalize ITBI identifiers: leading-zero SQL preserved, scientific
+      notation SQL expanded, uso/padrao float suffixes stripped, integer
+      numero/matricula, and 8-digit zero-padded CEP. Macro overrides skip
+      introspective slugify/schema guards; cast logic in stg_itbi final select
+      is what is under test.
     model: stg_itbi
     overrides:
       macros:
@@ -179,13 +187,23 @@ unit_tests:
           cep: "05093000"
           matricula_imovel: 987654
           uso_iptu: "10"
+          padrao_iptu: null
           source_year: 2024
         - nome_logradouro: fixture-street-b
           n_cadastro_sql: "202400099"
           numero: 7
           cep: "05036001"
           matricula_imovel: 123456
-          uso_iptu: "20.0"
+          uso_iptu: "20"
+          padrao_iptu: "11"
+          source_year: 2024
+        - nome_logradouro: fixture-street-sci
+          n_cadastro_sql: "2601502142"
+          numero: 1
+          cep: "01001000"
+          matricula_imovel: 1
+          uso_iptu: "0"
+          padrao_iptu: "0"
           source_year: 2024
 
   - name: test_stg_itbi_cep_invalid_becomes_null
@@ -210,4 +228,62 @@ unit_tests:
       rows:
         - nome_logradouro: fixture-street-invalid-cep
           cep: null
+          source_year: 2024
+
+  - name: test_stg_itbi_drops_header_junk
+    description: >-
+      Rows that echo Portuguese column headers (natureza / situacao / financiamento)
+      are filtered out; valid sibling rows are kept.
+    model: stg_itbi
+    overrides:
+      macros:
+        assert_itbi_schemas_match: ""
+        select_slugified_columns: "*"
+    given:
+      - input: source('raw', 'itbi_2024')
+        format: sql
+        fixture: stg_itbi_unit_test_header_junk
+      - input: source('raw', 'itbi_2025')
+        format: sql
+        fixture: stg_itbi_unit_test_empty
+      - input: source('raw', 'itbi_2026')
+        format: sql
+        fixture: stg_itbi_unit_test_empty
+    expect:
+      format: dict
+      rows:
+        - nome_logradouro: fixture-street-keep
+          natureza_transacao: "1.Compra e venda"
+          source_year: 2024
+
+  - name: test_stg_itbi_proporcao_range
+    description: >-
+      proporcao_transmitida keeps valid percent values (including tiny shares) and
+      nulls values outside [0, 100].
+    model: stg_itbi
+    overrides:
+      macros:
+        assert_itbi_schemas_match: ""
+        select_slugified_columns: "*"
+    given:
+      - input: source('raw', 'itbi_2024')
+        format: sql
+        fixture: stg_itbi_unit_test_proporcao
+      - input: source('raw', 'itbi_2025')
+        format: sql
+        fixture: stg_itbi_unit_test_empty
+      - input: source('raw', 'itbi_2026')
+        format: sql
+        fixture: stg_itbi_unit_test_empty
+    expect:
+      format: dict
+      rows:
+        - nome_logradouro: fixture-prop-full
+          proporcao_transmitida: 100.0
+          source_year: 2024
+        - nome_logradouro: fixture-prop-tiny
+          proporcao_transmitida: 0.01
+          source_year: 2024
+        - nome_logradouro: fixture-prop-absurd
+          proporcao_transmitida: null
           source_year: 2024
