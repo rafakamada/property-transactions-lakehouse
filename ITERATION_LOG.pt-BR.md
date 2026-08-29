@@ -8,6 +8,7 @@ de hoje após confirmação (crie o dia no topo se ainda não existir). Veja `.c
 
 ## 2026-08-29
 
+- **Adicionar CEP Aberto ao raw e staging** — estender a ingestão com `csv_datasets` para dumps de CEP de SP → `raw.cep_aberto`; adicionar `stg_cep_aberto` com CEP no mesmo formato do ITBI e testes de grain; seed de CI + docs citam [cepaberto.com](https://www.cepaberto.com/) e o enriquecimento do `bairro` bagunçado do ITBI via CEP. Verificar: `uv run pytest`, `uv run python scripts/ingest_raw.py`, `DBT_PROFILES_DIR=. dbt run -s stg_cep_aberto`, `dbt test -s stg_cep_aberto`
 - **Forçar tipos de identificadores em stg_itbi** — cast de `n_cadastro_sql`/`uso_iptu` para varchar, `numero`/`matricula_imovel` para integer, e normalizar CEP para string de 8 dígitos com zero à esquerda; documentar CEP no `schema.yml`; ignorar SQL local em `analyses/*`.
 - **Adicionar unit tests nativos do dbt para casts** — fixtures SQL em `tests/fixtures/` mais `test_stg_itbi_cast_fixtures` / `test_stg_itbi_cep_invalid_becomes_null`; pin `dbt-core>=1.12.3`. Verificar: `DBT_PROFILES_DIR=. dbt test --select "test_type:unit"`
 - **Endurecer casts e filtros de lixo em stg_itbi** — expandir SQL em notação científica; remover sufixos float do Excel em `uso_iptu`/`padrao_iptu`; anular `proporcao_transmitida` fora de `[0, 100]`; remover linhas que ecoam cabeçalhos; ampliar fixtures de unit test. Verificar: `DBT_PROFILES_DIR=. dbt test --select "test_type:unit"`, `dbt run -s stg_itbi`, `dbt test`
