@@ -21,13 +21,17 @@ year_{{ year }} as (
 )
 
 select
-    n_cadastro_sql,
+    cast(n_cadastro_sql as varchar) as n_cadastro_sql,
     nome_logradouro,
-    numero,
+    try_cast(numero as integer) as numero,
     complemento,
     bairro,
     referencia,
-    cep,
+    lpad(
+        cast(cast(try_cast(cep as double) as bigint) as varchar),
+        8,
+        '0'
+    ) as cep,
     natureza_transacao,
     try_cast(valor_transacao_declarado_pelo_contribuinte as double)
         as valor_transacao_declarado_pelo_contribuinte,
@@ -43,13 +47,13 @@ select
     tipo_financiamento,
     try_cast(valor_financiado as double) as valor_financiado,
     cartorio_registro,
-    matricula_imovel,
+    try_cast(matricula_imovel as integer) as matricula_imovel,
     situacao_sql,
     try_cast(area_terreno_m2 as double) as area_terreno_m2,
     try_cast(testada_m as double) as testada_m,
     try_cast(fracao_ideal as double) as fracao_ideal,
     try_cast(area_construida_m2 as double) as area_construida_m2,
-    uso_iptu,
+    cast(uso_iptu as varchar) as uso_iptu,
     descricao_uso_iptu,
     padrao_iptu,
     descricao_padrao_iptu,

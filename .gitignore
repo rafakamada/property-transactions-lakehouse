@@ -237,5 +237,10 @@ data/landing/*
 .idea/
 .vscode/
 
+# Local dbt analyses / scratch SQL (keep directory via .gitkeep)
+analyses/*
+!analyses/.gitkeep
+
 # dbt local user state
 .user.yml
+dbt_internal_packages/

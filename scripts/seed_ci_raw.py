@@ -75,6 +75,35 @@ def _sample_value(column: str, year: int, row: int) -> str:
     return f"sample-{year}-{row}"
 
 
+def _row_values(
+    columns: list[str],
+    year: int,
+    row: int,
+    overrides: dict[str, str] | None = None,
+) -> list[str]:
+    overrides = overrides or {}
+    return [
+        overrides[col] if col in overrides else _sample_value(col, year, row)
+        for col in columns
+    ]
+
+
+def _insert_row(
+    con: duckdb.DuckDBPyConnection,
+    table: str,
+    columns: list[str],
+    row_values: list[str],
+    metadata_values: list[str],
+) -> None:
+    values = row_values + metadata_values
+    placeholders = ", ".join("?" for _ in values)
+    quoted_cols = ", ".join(f'"{c}"' for c in list(columns) + list(METADATA))
+    con.execute(
+        f'INSERT INTO raw."{table}" ({quoted_cols}) VALUES ({placeholders})',
+        values,
+    )
+
+
 def seed(db_path: Path = DB_PATH) -> None:
     years = _itbi_years()
     columns = _transaction_columns()
@@ -101,27 +130,20 @@ def seed(db_path: Path = DB_PATH) -> None:
             )
 
             for row in range(2):
-                values: list[str] = []
-                for col in columns:
-                    values.append(_sample_value(col, year, row))
-                values.extend(
+                _insert_row(
+                    con,
+                    table,
+                    columns,
+                    _row_values(columns, year, row),
                     [
                         f"{year}.xlsx",
                         f"JAN-{year}",
                         loaded_at,
                         f"{year}-01-01",
-                    ]
+                    ],
                 )
-                placeholders = ", ".join("?" for _ in values)
-                quoted_cols = ", ".join(
-                    f'"{c}"' for c in list(columns) + list(METADATA)
-                )
-                con.execute(
-                    f'INSERT INTO raw."{table}" ({quoted_cols}) '
-                    f"VALUES ({placeholders})",
-                    values,
-                )
-            print(f"seeded raw.{table} ({2} rows)")
+
+            print(f"seeded raw.{table} (2 rows)")
     finally:
         con.close()
 
