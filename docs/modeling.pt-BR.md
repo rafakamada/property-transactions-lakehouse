@@ -8,7 +8,7 @@ English: [modeling.md](modeling.md)
 
 Downloads públicos de transações ITBI: [Prefeitura de São Paulo — Dados das Transações Imobiliárias](https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501).
 
-- Um arquivo XLSX por **ano** em `data/landing/` como `YYYY.xlsx`
+- Um arquivo XLSX por **ano** em `data/landing/itbi/` como `YYYY.xlsx`
 - O layout das abas é declarado em [`config/ingest_landing.yml`](../config/ingest_landing.yml):
   - **Abas de mês** (`MON-YYYY`) → `UNION ALL` em `raw.itbi_YYYY`
   - **Outras abas declaradas** → uma tabela `raw` cada (`sanitize(sheet)_YYYY` ou `table:` explícito)
@@ -25,9 +25,16 @@ Dump de CEP baixado de [CEP Aberto](https://www.cepaberto.com/) (partes do estad
 - Colunas na ingestão: `cep`, `logradouro`, `complemento`, `bairro`, `id_cidade`, `id_bairro`
 - **Por quê:** a coluna `bairro` do ITBI é bagunçada e pouco confiável. O CEP Aberto será juntado pelo `cep` normalizado nas camadas seguintes (intermediate/marts) para corrigir ou enriquecer o bairro. O staging só prepara as chaves de CEP (`stg_cep_aberto` / `stg_itbi`).
 
+### IPCA e SELIC (séries macro)
+
+Baixados de [Brazil Interest Rate History (SELIC) no Kaggle](https://www.kaggle.com/datasets/hssiqueira/brazil-interest-rate-history-selic/data). CSVs com cabeçalho em `data/landing/ipca/IBGE_IPCA.csv` e `data/landing/selic/BACEN_SELIC.csv`.
+
+- Declarados em `csv_datasets` em [`config/ingest_landing.yml`](../config/ingest_landing.yml) (`header: true`) → `raw.ipca` / `raw.selic`
+- O staging slugifica os cabeçalhos (incluindo CamelCase no SELIC) e coerção de datas/taxas (`stg_ipca`, `stg_selic`)
+
 ### Por que não `dbt seed`
 
-ITBI e CEP Aberto **não** são carregados com [`dbt seed`](https://docs.getdbt.com/reference/commands/seed). Seeds servem para CSVs pequenos e versionados em `seeds/`. Estas fontes são grandes (XLSX de vários MB; ~300k linhas de CEP), ficam em `data/landing/` (gitignored) e precisam de um contrato YAML de ingestão (uniões de abas, colunas de CSV sem cabeçalho, metadados). O caminho é landing → `scripts/ingest_raw.py` → `raw` → `source('raw', ...)`.
+ITBI, CEP Aberto, IPCA e SELIC **não** são carregados com [`dbt seed`](https://docs.getdbt.com/reference/commands/seed). Seeds servem para CSVs pequenos e versionados em `seeds/`. Estas fontes ficam em `data/landing/` (gitignored) e precisam de um contrato YAML de ingestão (uniões de abas, colunas de CSV, metadados). O caminho é landing → `scripts/ingest_raw.py` → `raw` → `source('raw', ...)`.
 
 `seed-paths: [seeds]` permanece em `dbt_project.yml` para futuras tabelas de referência pequenas, se necessário. O CI também não executa `dbt seed`; linhas sintéticas em `raw` são criadas por [`scripts/seed_ci_raw.py`](../scripts/seed_ci_raw.py), porque os arquivos de landing não estão no git.
 

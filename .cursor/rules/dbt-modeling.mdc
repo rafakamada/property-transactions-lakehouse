@@ -10,7 +10,7 @@ Pipeline: landing files → DuckDB `raw` (ingest) → `stg_` → `int_` → `fct
 
 | Layer | Location / naming | Role |
 |-------|-------------------|------|
-| Landing | `data/landing/` | Yearly `.xlsx` (sheets = months); not queried by models |
+| Landing | `data/landing/itbi/` (+ other source subdirs) | Yearly ITBI `.xlsx` (sheets = months); not queried by models |
 | Raw | schema `raw`, `source('raw', ...)` | As-ingested; full replace per file; no incremental |
 | Staging | `stg_*` | Rename, cast, dedupe; **views only — never incremental** |
 | Intermediate | `int_*` | Joins and shared logic; views by default |

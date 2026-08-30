@@ -18,12 +18,12 @@ Adding a new year file, replacing a corrected year, or changing sheet layout in 
 ## Workflow
 
 1. **Determine year** from month tab names (`MON-YYYY`, e.g. `JAN-2025`). Download names are unreliable.
-2. **Copy** into `data/landing/YYYY.xlsx` (landing is gitignored; do not commit multi‑MB XLSX).
+2. **Copy** into `data/landing/itbi/YYYY.xlsx` (landing is gitignored; do not commit multi‑MB XLSX).
 3. **List all sheet names** (zipfile/`xl/workbook.xml` or DuckDB). Every sheet must be either:
    - matched by `month_sheets.pattern`, or
    - listed under `other_sheets` (including LEGENDA, EXPLICAÇÕES, Tabela de USOS, Tabela de PADRÕES).
 4. **Update** [`config/ingest_landing.yml`](../../../config/ingest_landing.yml):
-   - `year`, `transaction_table: itbi_YYYY`
+   - `files."YYYY.xlsx"` entry (`year`, `transaction_table: itbi_YYYY`) — basename key; file lives under `data/landing/itbi/`
    - `month_sheets.pattern` for that year; set `overrides` with `header: false` when row 1 is data (probe `A1`)
    - `other_sheets` for every non-month tab; set explicit ASCII `table:` when sanitize would keep accents
 5. **Update** [`models/staging/_sources.yml`](../../../models/staging/_sources.yml) for `itbi_YYYY` and each other table.

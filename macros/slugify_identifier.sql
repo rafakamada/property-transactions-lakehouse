@@ -1,6 +1,10 @@
-{# Mechanical snake_case: accents stripped, Portuguese stop words dropped. #}
+{# Mechanical snake_case: CamelCase split, accents stripped, Portuguese stop
+   words dropped. #}
 {% macro slugify_identifier(name) %}
-  {%- set ns = namespace(s=(name | string | lower)) -%}
+  {%- set ns = namespace(s=(name | string)) -%}
+  {# Split CamelCase / PascalCase before lowercasing (e.g. MetaSelic → Meta_Selic). #}
+  {%- set ns.s = modules.re.sub('([a-z0-9])([A-Z])', '\\1_\\2', ns.s) -%}
+  {%- set ns.s = ns.s | lower -%}
   {%- set accent_pairs = [
     ('á', 'a'), ('à', 'a'), ('â', 'a'), ('ã', 'a'), ('ä', 'a'),
     ('é', 'e'), ('è', 'e'), ('ê', 'e'), ('ë', 'e'),

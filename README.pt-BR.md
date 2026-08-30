@@ -7,8 +7,9 @@ Projeto para aprender DuckDB e dbt analisando dados de transações imobiliária
 **Fontes de dados públicas:**
 - [Dados das Transações Imobiliárias com recolhimento de ITBI — Prefeitura de São Paulo](https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501) (downloads anuais em Excel/ODS).
 - [CEP Aberto](https://www.cepaberto.com/) (dump colaborativo de CEP; usado para corrigir o `bairro` bagunçado do ITBI via join pelo CEP).
+- Séries IBGE IPCA e BACEN SELIC de [Brazil Interest Rate History (SELIC) no Kaggle](https://www.kaggle.com/datasets/hssiqueira/brazil-interest-rate-history-selic/data) (CSVs com cabeçalho em `data/landing/ipca/` e `data/landing/selic/`).
 
-Pipeline: XLSX anual em landing (abas = meses + abas de referência) e CSVs do CEP Aberto → DuckDB `raw` (substituição completa, orientada por config) → dbt staging → intermediate → marts.
+Pipeline: XLSX anual em landing (abas = meses + abas de referência) mais CSVs do CEP Aberto / IPCA / SELIC → DuckDB `raw` (substituição completa, orientada por config) → dbt staging → intermediate → marts.
 
 Modelagem e decisões de incremental: [docs/modeling.pt-BR.md](docs/modeling.pt-BR.md).  
 Contrato de ingestão: [config/ingest_landing.yml](config/ingest_landing.yml).  
@@ -39,7 +40,7 @@ Requer [uv](https://docs.astral.sh/uv/) e Python 3.12.
 ### ITBI (XLSX)
 
 1. Baixe o arquivo do ano no [portal da Prefeitura](https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501).
-2. Renomeie/copie para `data/landing/YYYY.xlsx` (os nomes dos downloads são pouco confiáveis).
+2. Renomeie/copie para `data/landing/itbi/YYYY.xlsx` (os nomes dos downloads são pouco confiáveis).
 3. Declare as abas em [config/ingest_landing.yml](config/ingest_landing.yml):
    - **Abas de mês** (`MON-YYYY`) → união em `raw.itbi_YYYY`
    - **Outras abas** (LEGENDA, EXPLICAÇÕES, usos, padrões, …) → uma tabela cada, com sufixo do ano
@@ -51,15 +52,21 @@ Requer [uv](https://docs.astral.sh/uv/) e Python 3.12.
 2. As partes já estão declaradas em `csv_datasets.cep_aberto` em [config/ingest_landing.yml](config/ingest_landing.yml) → união em `raw.cep_aberto`.
 3. O `bairro` do ITBI é bagunçado; o CEP Aberto oferece um bairro mais limpo para enriquecimento posterior pelo `cep` normalizado.
 
+### IPCA e SELIC (CSV)
+
+1. Baixe em [Brazil Interest Rate History (SELIC) no Kaggle](https://www.kaggle.com/datasets/hssiqueira/brazil-interest-rate-history-selic/data); coloque `IBGE_IPCA.csv` em `data/landing/ipca/` e `BACEN_SELIC.csv` em `data/landing/selic/`.
+2. Ambos estão declarados em `csv_datasets` em [config/ingest_landing.yml](config/ingest_landing.yml) (`header: true`) → `raw.ipca` e `raw.selic`.
+3. O staging (`stg_ipca`, `stg_selic`) slugifica os cabeçalhos como no ITBI e coerção de datas/taxas.
+
 ### Rodar a ingestão
 
 ```bash
 uv run python scripts/ingest_raw.py
 ```
 
-Substitua o arquivo do ano quando ele for atualizado ou corrigido; a ingestão troca as tabelas `raw` correspondentes àquele arquivo. Rodar de novo também atualiza `raw.cep_aberto` a partir das partes CSV.
+Substitua o arquivo do ano quando ele for atualizado ou corrigido; a ingestão troca as tabelas `raw` correspondentes àquele arquivo. Rodar de novo também atualiza os datasets CSV (`cep_aberto`, `ipca`, `selic`) a partir do landing.
 
-[`dbt seed`](https://docs.getdbt.com/reference/commands/seed) **não** é usado para ITBI nem CEP Aberto (arquivos grandes em landing, gitignored + contrato YAML). Veja [docs/modeling.pt-BR.md](docs/modeling.pt-BR.md#por-que-não-dbt-seed).
+[`dbt seed`](https://docs.getdbt.com/reference/commands/seed) **não** é usado para ITBI, CEP Aberto, IPCA nem SELIC (arquivos de landing gitignored + contrato YAML). Veja [docs/modeling.pt-BR.md](docs/modeling.pt-BR.md#por-que-não-dbt-seed).
 
 > **Dica:**  
 > Ao adicionar ou atualizar a planilha de um ano, use a skill do projeto  
@@ -153,7 +160,7 @@ uv run pytest
 
 Pull requests e pushes para `master` rodam Ruff (check + format), pytest, depois um
 seed mínimo do DuckDB raw (`scripts/seed_ci_raw.py`) mais
-`dbt run -s stg_itbi stg_cep_aberto` e `dbt test` via GitHub Actions
+`dbt run -s stg_itbi stg_cep_aberto stg_ipca stg_selic` e `dbt test` via GitHub Actions
 (`.github/workflows/ci.yml`). Os XLSX/CSV de landing não estão no git; o CI semeia
-linhas sintéticas em `raw.itbi_YYYY` e `raw.cep_aberto` via `scripts/seed_ci_raw.py`
-em vez da ingestão completa ou de `dbt seed`.
+linhas sintéticas em `raw.itbi_YYYY`, `raw.cep_aberto`, `raw.ipca` e `raw.selic` via
+`scripts/seed_ci_raw.py` em vez da ingestão completa ou de `dbt seed`.
