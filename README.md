@@ -160,7 +160,7 @@ uv run pytest
 
 Pull requests and pushes to `master` run Ruff (check + format), pytest, then a
 minimal DuckDB raw seed (`scripts/seed_ci_raw.py`) plus
-`dbt run -s stg_itbi stg_cep_aberto` and `dbt test` via GitHub Actions
+`dbt run -s stg_itbi stg_cep_aberto stg_ipca stg_selic` and `dbt test` via GitHub Actions
 (`.github/workflows/ci.yml`). Landing XLSX/CSV files are not in git; CI seeds
-synthetic `raw.itbi_YYYY` and `raw.cep_aberto` rows via `scripts/seed_ci_raw.py`
-instead of full ingest or `dbt seed`.
+synthetic `raw.itbi_YYYY`, `raw.cep_aberto`, `raw.ipca`, and `raw.selic` rows via
+`scripts/seed_ci_raw.py` instead of full ingest or `dbt seed`.

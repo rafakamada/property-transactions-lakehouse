@@ -160,7 +160,7 @@ uv run pytest
 
 Pull requests e pushes para `master` rodam Ruff (check + format), pytest, depois um
 seed mínimo do DuckDB raw (`scripts/seed_ci_raw.py`) mais
-`dbt run -s stg_itbi stg_cep_aberto` e `dbt test` via GitHub Actions
+`dbt run -s stg_itbi stg_cep_aberto stg_ipca stg_selic` e `dbt test` via GitHub Actions
 (`.github/workflows/ci.yml`). Os XLSX/CSV de landing não estão no git; o CI semeia
-linhas sintéticas em `raw.itbi_YYYY` e `raw.cep_aberto` via `scripts/seed_ci_raw.py`
-em vez da ingestão completa ou de `dbt seed`.
+linhas sintéticas em `raw.itbi_YYYY`, `raw.cep_aberto`, `raw.ipca` e `raw.selic` via
+`scripts/seed_ci_raw.py` em vez da ingestão completa ou de `dbt seed`.
