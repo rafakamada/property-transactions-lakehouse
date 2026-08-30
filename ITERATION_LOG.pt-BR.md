@@ -8,6 +8,7 @@ de hoje após confirmação (crie o dia no topo se ainda não existir). Veja `.c
 
 ## 2026-08-30
 
+- **Colocar planilhas ITBI em `data/landing/itbi/`** — restringir a descoberta de Excel a essa pasta; gravar `_source_file` relativo (ex.: `itbi/2026.xlsx`); atualizar seed de CI, docs e `configure-itbi-landing`. Verificar: `uv run pytest`, `uv run python scripts/ingest_raw.py`
 - **Adicionar IPCA e SELIC ao raw e staging** — `csv_datasets` para CSVs IBGE/BACEN do Kaggle → `raw.ipca` / `raw.selic`; `stg_ipca` / `stg_selic` com slugify ciente de CamelCase, casts, testes de grain, fixtures de unit test dbt, seed de CI e docs. Verificar: `uv run pytest`, `uv run python scripts/ingest_raw.py`, `DBT_PROFILES_DIR=. dbt run -s stg_ipca stg_selic`, `dbt test -s stg_ipca stg_selic`
 
 ## 2026-08-29
