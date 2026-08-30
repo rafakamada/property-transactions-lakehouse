@@ -44,17 +44,23 @@ def test_sanitize_table_name(stem: str, expected: str) -> None:
 
 def test_find_excel_files_empty(tmp_path: Path) -> None:
     assert find_excel_files(tmp_path) == []
+    (tmp_path / "itbi").mkdir()
+    assert find_excel_files(tmp_path) == []
 
 
 def test_find_excel_files_filters_and_sorts(tmp_path: Path) -> None:
-    (tmp_path / "b_sales.xlsx").write_bytes(b"")
-    (tmp_path / "a_sales.XLSX").write_bytes(b"")
-    (tmp_path / "macro.xlsm").write_bytes(b"")
-    (tmp_path / "notes.csv").write_bytes(b"")
-    (tmp_path / "readme.txt").write_bytes(b"")
-    (tmp_path / "subdir").mkdir()
-    (tmp_path / "subdir" / "nested.xlsx").write_bytes(b"")
-    (tmp_path / ".gitkeep").write_bytes(b"")
+    itbi = tmp_path / "itbi"
+    itbi.mkdir()
+    (itbi / "b_sales.xlsx").write_bytes(b"")
+    (itbi / "a_sales.XLSX").write_bytes(b"")
+    (itbi / "macro.xlsm").write_bytes(b"")
+    (itbi / "notes.csv").write_bytes(b"")
+    (itbi / "readme.txt").write_bytes(b"")
+    (itbi / "subdir").mkdir()
+    (itbi / "subdir" / "nested.xlsx").write_bytes(b"")
+    (itbi / ".gitkeep").write_bytes(b"")
+    # Excel files outside itbi/ are ignored.
+    (tmp_path / "orphan.xlsx").write_bytes(b"")
 
     found = find_excel_files(tmp_path)
 
@@ -64,6 +70,7 @@ def test_find_excel_files_filters_and_sorts(tmp_path: Path) -> None:
         "macro.xlsm",
     ]
     assert all(p.is_file() for p in found)
+    assert all(p.parent.name == "itbi" for p in found)
 
 
 def test_resolve_table_names_unique(tmp_path: Path) -> None:

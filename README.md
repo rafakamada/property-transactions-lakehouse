@@ -40,7 +40,7 @@ Requires [uv](https://docs.astral.sh/uv/) and Python 3.12.
 ### ITBI (XLSX)
 
 1. Download a year file from the [Prefeitura portal](https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501).
-2. Rename/copy into `data/landing/YYYY.xlsx` (download filenames are unreliable).
+2. Rename/copy into `data/landing/itbi/YYYY.xlsx` (download filenames are unreliable).
 3. Declare sheets in [config/ingest_landing.yml](config/ingest_landing.yml):
    - **Month sheets** (`MON-YYYY`) → unioned into `raw.itbi_YYYY`
    - **Other sheets** (LEGENDA, EXPLICAÇÕES, usos, padrões, …) → one table each with a year suffix

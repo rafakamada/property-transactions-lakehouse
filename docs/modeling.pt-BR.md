@@ -8,7 +8,7 @@ English: [modeling.md](modeling.md)
 
 Downloads públicos de transações ITBI: [Prefeitura de São Paulo — Dados das Transações Imobiliárias](https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501).
 
-- Um arquivo XLSX por **ano** em `data/landing/` como `YYYY.xlsx`
+- Um arquivo XLSX por **ano** em `data/landing/itbi/` como `YYYY.xlsx`
 - O layout das abas é declarado em [`config/ingest_landing.yml`](../config/ingest_landing.yml):
   - **Abas de mês** (`MON-YYYY`) → `UNION ALL` em `raw.itbi_YYYY`
   - **Outras abas declaradas** → uma tabela `raw` cada (`sanitize(sheet)_YYYY` ou `table:` explícito)

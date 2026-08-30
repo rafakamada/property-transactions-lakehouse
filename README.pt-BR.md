@@ -40,7 +40,7 @@ Requer [uv](https://docs.astral.sh/uv/) e Python 3.12.
 ### ITBI (XLSX)
 
 1. Baixe o arquivo do ano no [portal da Prefeitura](https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501).
-2. Renomeie/copie para `data/landing/YYYY.xlsx` (os nomes dos downloads são pouco confiáveis).
+2. Renomeie/copie para `data/landing/itbi/YYYY.xlsx` (os nomes dos downloads são pouco confiáveis).
 3. Declare as abas em [config/ingest_landing.yml](config/ingest_landing.yml):
    - **Abas de mês** (`MON-YYYY`) → união em `raw.itbi_YYYY`
    - **Outras abas** (LEGENDA, EXPLICAÇÕES, usos, padrões, …) → uma tabela cada, com sufixo do ano

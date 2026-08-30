@@ -8,6 +8,7 @@ only after confirmation (create the day at the top if missing). See `.cursor/rul
 
 ## 2026-08-30
 
+- **Put ITBI workbooks under `data/landing/itbi/`** — scope Excel discovery to that folder; store relative `_source_file` (e.g. `itbi/2026.xlsx`); update CI seed, docs, and `configure-itbi-landing`. Verify: `uv run pytest`, `uv run python scripts/ingest_raw.py`
 - **Add IPCA and SELIC to raw and staging** — `csv_datasets` for Kaggle IBGE/BACEN CSVs → `raw.ipca` / `raw.selic`; `stg_ipca` / `stg_selic` with CamelCase-aware slugify, casts, grain tests, dbt unit fixtures, CI seed, and docs. Verify: `uv run pytest`, `uv run python scripts/ingest_raw.py`, `DBT_PROFILES_DIR=. dbt run -s stg_ipca stg_selic`, `dbt test -s stg_ipca stg_selic`
 
 ## 2026-08-29

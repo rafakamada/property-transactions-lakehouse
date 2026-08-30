@@ -3,8 +3,8 @@
 Usage:
     uv run python scripts/ingest_raw.py
 
-Place yearly `.xlsx` / `.xlsm` files in `data/landing/` as `YYYY.xlsx` and
-declare their sheets in `config/ingest_landing.yml`. Month sheets are unioned
+Place yearly ITBI `.xlsx` / `.xlsm` files in `data/landing/itbi/` as `YYYY.xlsx`
+and declare their sheets in `config/ingest_landing.yml`. Month sheets are unioned
 into one transaction table per year; every other declared sheet becomes its
 own year-suffixed table. CSV datasets (e.g. CEP Aberto) are declared under
 `csv_datasets` and unioned into one table each. Re-running replaces tables
@@ -27,6 +27,7 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 LANDING_DIR = REPO_ROOT / "data" / "landing"
+ITBI_SUBDIR = "itbi"
 DB_PATH = REPO_ROOT / "data" / "dev.duckdb"
 CONFIG_PATH = REPO_ROOT / "config" / "ingest_landing.yml"
 EXCEL_SUFFIXES = {".xlsx", ".xlsm"}
@@ -121,9 +122,13 @@ class IngestConfig:
 
 
 def find_excel_files(landing_dir: Path) -> list[Path]:
+    """Return ITBI workbooks under data/landing/itbi/ (not other landing subdirs)."""
+    itbi_dir = landing_dir / ITBI_SUBDIR
+    if not itbi_dir.is_dir():
+        return []
     return sorted(
         p
-        for p in landing_dir.iterdir()
+        for p in itbi_dir.iterdir()
         if p.is_file() and p.suffix.lower() in EXCEL_SUFFIXES
     )
 
@@ -472,10 +477,13 @@ def ingest_file(
     file_cfg: FileConfig,
     defaults: IngestDefaults,
     loaded_at: str,
+    *,
+    source_file: str | None = None,
 ) -> list[str]:
     sheet_names = list_sheet_names(path)
     months, others = classify_workbook_sheets(sheet_names, file_cfg)
     created: list[str] = []
+    source_label = source_file if source_file is not None else path.name
 
     month_selects: list[str] = []
     for sheet in months:
@@ -488,7 +496,7 @@ def ingest_file(
                 sheet=sheet,
                 header=header,
                 defaults=defaults,
-                source_file=path.name,
+                source_file=source_label,
                 loaded_at=loaded_at,
                 reference_month=reference_month,
             )
@@ -498,7 +506,7 @@ def ingest_file(
     tx_table = file_cfg.transaction_table
     con.execute(f"CREATE OR REPLACE TABLE raw.{_quoted_ident(tx_table)} AS {union_sql}")
     created.append(f"raw.{tx_table}")
-    print(f"ingested {path.name} months -> raw.{tx_table} ({len(months)} sheets)")
+    print(f"ingested {source_label} months -> raw.{tx_table} ({len(months)} sheets)")
 
     for sheet_name, other_cfg in others.items():
         table = other_sheet_table_name(sheet_name, file_cfg.year, other_cfg.table)
@@ -521,10 +529,10 @@ def ingest_file(
                 ? AS _loaded_at
             FROM {reader}
             """,
-            [path.name, sheet_name, loaded_at],
+            [source_label, sheet_name, loaded_at],
         )
         created.append(f"raw.{table}")
-        print(f"ingested {path.name} / {sheet_name} -> raw.{table}")
+        print(f"ingested {source_label} / {sheet_name} -> raw.{table}")
 
     return created
 
@@ -682,7 +690,16 @@ def ingest(
         loaded_at = datetime.now(UTC).isoformat()
         for path in files:
             file_cfg = config.files[path.name]
-            created.extend(ingest_file(con, path, file_cfg, config.defaults, loaded_at))
+            created.extend(
+                ingest_file(
+                    con,
+                    path,
+                    file_cfg,
+                    config.defaults,
+                    loaded_at,
+                    source_file=str(path.relative_to(landing_dir)),
+                )
+            )
         for dataset in config.csv_datasets.values():
             created.append(ingest_csv_dataset(con, landing_dir, dataset, loaded_at))
     finally:
@@ -704,7 +721,8 @@ def main() -> int:
     files = find_excel_files(LANDING_DIR)
     if not files and not config.csv_datasets:
         print(
-            f"error: no .xlsx/.xlsm files and no csv_datasets in {LANDING_DIR}",
+            f"error: no ITBI .xlsx/.xlsm under {LANDING_DIR / ITBI_SUBDIR} "
+            f"and no csv_datasets",
             file=sys.stderr,
         )
         return 1

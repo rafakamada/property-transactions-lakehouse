@@ -1,7 +1,8 @@
-# Landing → DuckDB raw ingest contract (XLSX + CSV datasets).
+# Landing → DuckDB raw ingest contract (XLSX under itbi/ + CSV datasets).
 # See docs/modeling.md and .cursor/skills/configure-itbi-landing/
 # ITBI: https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501
 # CEP Aberto: https://www.cepaberto.com/
+# IPCA / SELIC: https://www.kaggle.com/datasets/hssiqueira/brazil-interest-rate-history-selic/data
 
 version: 1
 
@@ -40,6 +41,7 @@ defaults:
     - "ACC (IPTU)"
 
 files:
+  # Filenames under data/landing/itbi/ (basename keys; discovery is folder-scoped).
   "2024.xlsx":
     year: 2024
     transaction_table: itbi_2024

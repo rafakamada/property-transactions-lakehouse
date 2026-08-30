@@ -8,7 +8,7 @@ Português: [modeling.pt-BR.md](modeling.pt-BR.md)
 
 Public ITBI transaction downloads: [Prefeitura de São Paulo — Dados das Transações Imobiliárias](https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501).
 
-- One XLSX file per **year** in `data/landing/` as `YYYY.xlsx`
+- One XLSX file per **year** in `data/landing/itbi/` as `YYYY.xlsx`
 - Sheet layout is declared in [`config/ingest_landing.yml`](../config/ingest_landing.yml):
   - **Month sheets** (`MON-YYYY`) → `UNION ALL` into `raw.itbi_YYYY`
   - **Other declared sheets** → one `raw` table each (`sanitize(sheet)_YYYY` or explicit `table:`)

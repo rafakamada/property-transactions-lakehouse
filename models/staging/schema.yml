@@ -133,7 +133,7 @@ models:
           Corrected year construction was completed (may change after renovation,
           expansion, etc.). IPTU-base field (not part of the DTI).
       - name: _source_file
-        description: Landing file name from ingest.
+        description: Landing path relative to data/landing/ from ingest (e.g. itbi/2026.xlsx).
         data_tests:
           - not_null
       - name: _source_sheet

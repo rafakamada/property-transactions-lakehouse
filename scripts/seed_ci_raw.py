@@ -178,7 +178,7 @@ def seed(db_path: Path = DB_PATH) -> None:
                     columns,
                     _row_values(columns, year, row),
                     [
-                        f"{year}.xlsx",
+                        f"itbi/{year}.xlsx",
                         f"JAN-{year}",
                         loaded_at,
                         f"{year}-01-01",

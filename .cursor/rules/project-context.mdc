@@ -9,7 +9,7 @@ Stack: DuckDB + dbt (dbt-duckdb), managed with uv and Python 3.12.
 
 ## Layout and flow
 
-- Landing: yearly `data/landing/*.xlsx` (one sheet per month); not queried by models
+- Landing: yearly `data/landing/itbi/*.xlsx` (one sheet per month); not queried by models
 - Ingest: `uv run python scripts/ingest_raw.py` → DuckDB schema `raw` (full replace per file)
 - Transform: `stg_` (views) → `int_` (views) → `dim_` (tables) / `fct_` (incremental merge)
 - Materialization details: `docs/modeling.md`
