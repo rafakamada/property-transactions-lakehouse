@@ -6,6 +6,10 @@ Dia mais recente primeiro. Uma seção por dia civil. Redija bullets neste arqui
 `ITERATION_LOG.md`, mostre o preview ao usuário e só então acrescente sob o cabeçalho
 de hoje após confirmação (crie o dia no topo se ainda não existir). Veja `.cursor/rules/commit-hygiene.mdc`.
 
+## 2026-08-30
+
+- **Adicionar IPCA e SELIC ao raw e staging** — `csv_datasets` para CSVs IBGE/BACEN do Kaggle → `raw.ipca` / `raw.selic`; `stg_ipca` / `stg_selic` com slugify ciente de CamelCase, casts, testes de grain, fixtures de unit test dbt, seed de CI e docs. Verificar: `uv run pytest`, `uv run python scripts/ingest_raw.py`, `DBT_PROFILES_DIR=. dbt run -s stg_ipca stg_selic`, `dbt test -s stg_ipca stg_selic`
+
 ## 2026-08-29
 
 - **Usar `dbt_project.yml` para views de staging** — remover `{{ config(materialized='view') }}` redundante de `stg_itbi` / `stg_cep_aberto`; corrigir unit tests no Fusion com fixtures nos cabeçalhos portugueses do raw e `select_slugified_columns` real. Verificar: `DBT_PROFILES_DIR=. dbt test -s stg_itbi stg_cep_aberto`

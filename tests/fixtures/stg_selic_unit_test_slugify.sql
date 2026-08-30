@@ -1,0 +1,15 @@
+select
+    '280.0' as "NumeroReuniaoCopom",
+    'False' as "ReuniaoExtraordinaria",
+    '2026-08-05T03:00:00Z' as "DataReuniaoCopom",
+    'n/a' as "Vies",
+    'False' as "UsoMetaSelic",
+    '2026-08-06T03:00:00Z' as "DataInicioVigencia",
+    cast(null as varchar) as "DataFimVigencia",
+    '14.0' as "MetaSelic",
+    cast(null as varchar) as "TaxaTban",
+    cast(null as varchar) as "TaxaSelicEfetivaVigencia",
+    cast(null as varchar) as "TaxaSelicEfetivaAnualizada",
+    'False' as "descisaoMonocraticaPres",
+    'selic/BACEN_SELIC.csv' as _source_file,
+    '2024-01-01T00:00:00+00:00' as _loaded_at

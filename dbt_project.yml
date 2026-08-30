@@ -50,6 +50,30 @@ vars:
     - "_source_sheet"
     - "_loaded_at"
     - "_reference_month"
+  # Ordered raw IPCA columns + ingest metadata. Keep in sync with
+  # config/ingest_landing.yml csv_datasets.ipca.columns.
+  ipca_raw_columns:
+    - "Date"
+    - "IPCA Rate (last 12 months)"
+    - "_source_file"
+    - "_loaded_at"
+  # Ordered raw SELIC columns + ingest metadata. Keep in sync with
+  # config/ingest_landing.yml csv_datasets.selic.columns.
+  selic_raw_columns:
+    - "NumeroReuniaoCopom"
+    - "ReuniaoExtraordinaria"
+    - "DataReuniaoCopom"
+    - "Vies"
+    - "UsoMetaSelic"
+    - "DataInicioVigencia"
+    - "DataFimVigencia"
+    - "MetaSelic"
+    - "TaxaTban"
+    - "TaxaSelicEfetivaVigencia"
+    - "TaxaSelicEfetivaAnualizada"
+    - "descisaoMonocraticaPres"
+    - "_source_file"
+    - "_loaded_at"
 
 models:
   property_transactions_lakehouse:

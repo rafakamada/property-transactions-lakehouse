@@ -5,9 +5,11 @@ sources:
     schema: raw
     description: >-
       As-ingested landing tables. ITBI XLSX from the Prefeitura de São Paulo portal
-      (https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501) and
-      CEP Aberto CSV dumps (https://www.cepaberto.com/). Column names and types
-      preserved from source files (varchar via ingest).
+      (https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501),
+      CEP Aberto CSV dumps (https://www.cepaberto.com/), and IBGE IPCA / BACEN
+      SELIC from Kaggle
+      (https://www.kaggle.com/datasets/hssiqueira/brazil-interest-rate-history-selic/data).
+      Column names and types preserved from source files (varchar via ingest).
     tables:
       - name: itbi_2024
         description: Union of 2024 month sheets (payment-month reference in _reference_month).
@@ -32,3 +34,13 @@ sources:
           Union of São Paulo state CEP Aberto CSV parts under data/landing/cep_aberto/.
           Headerless dump columns renamed at ingest (cep, logradouro, complemento,
           bairro, id_cidade, id_bairro). Downloaded from https://www.cepaberto.com/.
+      - name: ipca
+        description: >-
+          IBGE IPCA cumulative 12-month rate series from data/landing/ipca/IBGE_IPCA.csv
+          (Date as MM/YYYY, IPCA Rate (last 12 months)). Downloaded from
+          https://www.kaggle.com/datasets/hssiqueira/brazil-interest-rate-history-selic/data
+      - name: selic
+        description: >-
+          BACEN Copom / SELIC meta series from data/landing/selic/BACEN_SELIC.csv
+          (meeting dates, meta SELIC, effective rates). Downloaded from
+          https://www.kaggle.com/datasets/hssiqueira/brazil-interest-rate-history-selic/data

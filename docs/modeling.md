@@ -25,9 +25,16 @@ CEP dump downloaded from [CEP Aberto](https://www.cepaberto.com/) (São Paulo st
 - Columns at ingest: `cep`, `logradouro`, `complemento`, `bairro`, `id_cidade`, `id_bairro`
 - **Why:** ITBI’s `bairro` (neighborhood) column is messy and unreliable. CEP Aberto will be joined on normalized `cep` downstream (intermediate/marts) to fix or enrich neighborhood values. Staging only prepares matching CEP keys (`stg_cep_aberto` / `stg_itbi`).
 
+### IPCA and SELIC (macro series)
+
+Downloaded from [Brazil Interest Rate History (SELIC) on Kaggle](https://www.kaggle.com/datasets/hssiqueira/brazil-interest-rate-history-selic/data). Headered CSVs under `data/landing/ipca/IBGE_IPCA.csv` and `data/landing/selic/BACEN_SELIC.csv`.
+
+- Declared under `csv_datasets` in [`config/ingest_landing.yml`](../config/ingest_landing.yml) (`header: true`) → `raw.ipca` / `raw.selic`
+- Staging slugifies headers (including CamelCase for SELIC) and coerces dates/rates (`stg_ipca`, `stg_selic`)
+
 ### Why not `dbt seed`
 
-ITBI and CEP Aberto are **not** loaded with [`dbt seed`](https://docs.getdbt.com/reference/commands/seed). Seeds are for small, version-controlled CSVs checked into `seeds/`. These sources are large (multi‑MB XLSX; ~300k CEP rows), live under gitignored `data/landing/`, and need a YAML ingest contract (sheet unions, headerless CSV columns, metadata). Landing → `scripts/ingest_raw.py` → `raw` → `source('raw', ...)` is the path.
+ITBI, CEP Aberto, IPCA, and SELIC are **not** loaded with [`dbt seed`](https://docs.getdbt.com/reference/commands/seed). Seeds are for small, version-controlled CSVs checked into `seeds/`. These sources live under gitignored `data/landing/` and need a YAML ingest contract (sheet unions, CSV columns, metadata). Landing → `scripts/ingest_raw.py` → `raw` → `source('raw', ...)` is the path.
 
 `seed-paths: [seeds]` remains in `dbt_project.yml` for future tiny reference tables if needed. CI does not run `dbt seed` either; synthetic `raw` rows are created by [`scripts/seed_ci_raw.py`](../scripts/seed_ci_raw.py) because landing files are not in git.
 

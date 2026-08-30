@@ -97,7 +97,7 @@ files:
       "Tabela de PADRÕES":
         table: tabela_de_padroes_2026
 
-# Headerless CSV dumps under data/landing/ (paths relative to landing).
+# CSV dumps under data/landing/ (paths relative to landing).
 csv_datasets:
   cep_aberto:
     table: cep_aberto
@@ -111,3 +111,35 @@ csv_datasets:
       - bairro
       - id_cidade
       - id_bairro
+
+  # IBGE IPCA 12-month rate series (headered CSV).
+  # Source: https://www.kaggle.com/datasets/hssiqueira/brazil-interest-rate-history-selic/data
+  ipca:
+    table: ipca
+    glob: "ipca/IBGE_IPCA.csv"
+    header: true
+    all_varchar: true
+    columns:
+      - "Date"
+      - "IPCA Rate (last 12 months)"
+
+  # BACEN Copom / SELIC meta series (headered CSV).
+  # Source: https://www.kaggle.com/datasets/hssiqueira/brazil-interest-rate-history-selic/data
+  selic:
+    table: selic
+    glob: "selic/BACEN_SELIC.csv"
+    header: true
+    all_varchar: true
+    columns:
+      - NumeroReuniaoCopom
+      - ReuniaoExtraordinaria
+      - DataReuniaoCopom
+      - Vies
+      - UsoMetaSelic
+      - DataInicioVigencia
+      - DataFimVigencia
+      - MetaSelic
+      - TaxaTban
+      - TaxaSelicEfetivaVigencia
+      - TaxaSelicEfetivaAnualizada
+      - descisaoMonocraticaPres

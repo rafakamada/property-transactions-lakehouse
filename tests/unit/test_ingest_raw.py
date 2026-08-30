@@ -341,3 +341,55 @@ def test_resolve_csv_paths_missing(tmp_path: Path) -> None:
     )
     with pytest.raises(IngestConfigError, match="no files matched"):
         resolve_csv_paths(tmp_path, dataset)
+
+
+def test_ingest_headered_csv_projects_columns(tmp_path: Path) -> None:
+    from ingest_raw import CsvDatasetConfig, ingest_csv_dataset
+
+    landing = tmp_path / "landing"
+    ipca_dir = landing / "ipca"
+    ipca_dir.mkdir(parents=True)
+    (ipca_dir / "IBGE_IPCA.csv").write_text(
+        "Date,IPCA Rate (last 12 months),extra_ignored\n"
+        "01/2024,4.51,should-not-appear\n",
+        encoding="utf-8",
+    )
+
+    dataset = CsvDatasetConfig(
+        key="ipca",
+        table="ipca",
+        glob="ipca/IBGE_IPCA.csv",
+        header=True,
+        all_varchar=True,
+        columns=("Date", "IPCA Rate (last 12 months)"),
+    )
+
+    import duckdb
+
+    db_path = tmp_path / "test.duckdb"
+    con = duckdb.connect(str(db_path))
+    try:
+        con.execute("CREATE SCHEMA raw")
+        table = ingest_csv_dataset(con, landing, dataset, "2026-01-01T00:00:00+00:00")
+        assert table == "raw.ipca"
+        cols = [
+            row[0]
+            for row in con.execute(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema = 'raw' AND table_name = 'ipca' "
+                "ORDER BY ordinal_position"
+            ).fetchall()
+        ]
+        rows = con.execute(
+            'SELECT "Date", "IPCA Rate (last 12 months)", _source_file FROM raw.ipca'
+        ).fetchall()
+    finally:
+        con.close()
+
+    assert cols == [
+        "Date",
+        "IPCA Rate (last 12 months)",
+        "_source_file",
+        "_loaded_at",
+    ]
+    assert rows == [("01/2024", "4.51", "ipca/IBGE_IPCA.csv")]

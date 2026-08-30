@@ -7,8 +7,9 @@ Learn DuckDB and dbt while analyzing property transaction data.
 **Public data sources:**
 - [Dados das Transações Imobiliárias com recolhimento de ITBI — Prefeitura de São Paulo](https://prefeitura.sp.gov.br/web/fazenda/w/acesso_a_informacao/31501) (yearly Excel/ODS downloads).
 - [CEP Aberto](https://www.cepaberto.com/) (collaborative CEP dump; used to fix messy ITBI `bairro` / neighborhood via CEP join).
+- IBGE IPCA and BACEN SELIC series from [Brazil Interest Rate History (SELIC) on Kaggle](https://www.kaggle.com/datasets/hssiqueira/brazil-interest-rate-history-selic/data) (headered CSVs under `data/landing/ipca/` and `data/landing/selic/`).
 
-Pipeline: yearly landing XLSX (sheets = months + reference tabs) and CEP Aberto CSVs → DuckDB `raw` (full replace, config-driven) → dbt staging → intermediate → marts.
+Pipeline: yearly landing XLSX (sheets = months + reference tabs) plus CEP Aberto / IPCA / SELIC CSVs → DuckDB `raw` (full replace, config-driven) → dbt staging → intermediate → marts.
 
 Modeling and incremental decisions: [docs/modeling.md](docs/modeling.md).  
 Ingest contract: [config/ingest_landing.yml](config/ingest_landing.yml).  
@@ -51,15 +52,21 @@ Requires [uv](https://docs.astral.sh/uv/) and Python 3.12.
 2. Parts are already declared under `csv_datasets.cep_aberto` in [config/ingest_landing.yml](config/ingest_landing.yml) → unioned into `raw.cep_aberto`.
 3. ITBI `bairro` is messy; CEP Aberto supplies a cleaner neighborhood for later enrichment on normalized `cep`.
 
+### IPCA and SELIC (CSV)
+
+1. Download from [Brazil Interest Rate History (SELIC) on Kaggle](https://www.kaggle.com/datasets/hssiqueira/brazil-interest-rate-history-selic/data); place `IBGE_IPCA.csv` under `data/landing/ipca/` and `BACEN_SELIC.csv` under `data/landing/selic/`.
+2. Both are declared under `csv_datasets` in [config/ingest_landing.yml](config/ingest_landing.yml) (`header: true`) → `raw.ipca` and `raw.selic`.
+3. Staging (`stg_ipca`, `stg_selic`) slugifies headers like ITBI and coerces dates/rates.
+
 ### Run ingest
 
 ```bash
 uv run python scripts/ingest_raw.py
 ```
 
-Re-drop a year file when that year is updated or corrected; ingest replaces the corresponding `raw` tables for that file. Re-running also refreshes `raw.cep_aberto` from the CSV parts.
+Re-drop a year file when that year is updated or corrected; ingest replaces the corresponding `raw` tables for that file. Re-running also refreshes CSV datasets (`cep_aberto`, `ipca`, `selic`) from landing.
 
-[`dbt seed`](https://docs.getdbt.com/reference/commands/seed) is **not** used for ITBI or CEP Aberto (large, gitignored landing files + YAML ingest). See [docs/modeling.md](docs/modeling.md#why-not-dbt-seed).
+[`dbt seed`](https://docs.getdbt.com/reference/commands/seed) is **not** used for ITBI, CEP Aberto, IPCA, or SELIC (gitignored landing files + YAML ingest). See [docs/modeling.md](docs/modeling.md#why-not-dbt-seed).
 
 > **Tip:**  
 > When adding or updating a year spreadsheet, you can use the project skill  

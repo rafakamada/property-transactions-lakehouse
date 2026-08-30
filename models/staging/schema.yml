@@ -194,6 +194,84 @@ models:
         data_tests:
           - not_null
 
+  - name: stg_ipca
+    description: >-
+      IBGE IPCA cumulative 12-month inflation rate series (from
+      https://www.kaggle.com/datasets/hssiqueira/brazil-interest-rate-history-selic/data).
+      Grain: one row per reference month. Headers slugified (Date → date;
+      IPCA Rate (last 12 months) → ipca_rate_last_12_months); Date MM/YYYY
+      coerced to first-of-month date.
+    columns:
+      - name: date
+        description: >-
+          Reference month as the first day of that month (from source MM/YYYY).
+        data_tests:
+          - unique
+          - not_null
+      - name: ipca_rate_last_12_months
+        description: Cumulative IPCA rate over the trailing 12 months (percent).
+        data_tests:
+          - not_null
+      - name: _source_file
+        description: Landing CSV path relative to data/landing/ from ingest.
+        data_tests:
+          - not_null
+      - name: _loaded_at
+        description: Ingest timestamp.
+        data_tests:
+          - not_null
+
+  - name: stg_selic
+    description: >-
+      BACEN Copom / SELIC meta series (from
+      https://www.kaggle.com/datasets/hssiqueira/brazil-interest-rate-history-selic/data).
+      Grain: one row per Copom meeting date (data_reuniao_copom). Meeting numbers
+      (numero_reuniao_copom) can repeat in early history. PascalCase headers
+      slugified via CamelCase split (e.g. MetaSelic → meta_selic); timestamps and
+      rates coerced in staging.
+    columns:
+      - name: numero_reuniao_copom
+        description: >-
+          Copom meeting number. Not unique in source for some early meetings;
+          use data_reuniao_copom as the row grain.
+        data_tests:
+          - not_null
+      - name: reuniao_extraordinaria
+        description: Whether the meeting was extraordinary.
+      - name: data_reuniao_copom
+        description: Copom meeting timestamp (UTC); unique grain key.
+        data_tests:
+          - unique
+          - not_null
+      - name: vies
+        description: Policy bias / vies text from BACEN (often n/a).
+      - name: uso_meta_selic
+        description: Whether the SELIC meta was in use for the period.
+      - name: data_inicio_vigencia
+        description: Start of SELIC meta validity (UTC).
+      - name: data_fim_vigencia
+        description: End of SELIC meta validity (UTC); null while current.
+      - name: meta_selic
+        description: SELIC target rate (percent per year).
+      - name: taxa_tban
+        description: TBAN rate when present.
+      - name: taxa_selic_efetiva_vigencia
+        description: Effective SELIC over the validity window.
+      - name: taxa_selic_efetiva_anualizada
+        description: Annualized effective SELIC rate.
+      - name: descisao_monocratica_pres
+        description: >-
+          Monocratic presidential decision flag (source column typo
+          descisaoMonocraticaPres preserved in slug).
+      - name: _source_file
+        description: Landing CSV path relative to data/landing/ from ingest.
+        data_tests:
+          - not_null
+      - name: _loaded_at
+        description: Ingest timestamp.
+        data_tests:
+          - not_null
+
 unit_tests:
   - name: test_stg_itbi_cast_fixtures
     description: >-
@@ -323,3 +401,44 @@ unit_tests:
         - nome_logradouro: fixture-prop-absurd
           proporcao_transmitida: null
           source_year: 2024
+
+  - name: test_stg_ipca_slugify
+    description: >-
+      Raw IPCA headers (Date, IPCA Rate (last 12 months)) become slugified
+      aliases date and ipca_rate_last_12_months; MM/YYYY becomes first-of-month
+      date. Fixture uses raw headers; select_slugified_columns uses
+      var('ipca_raw_columns') when the unit-test CTE is not introspectable.
+    model: stg_ipca
+    given:
+      - input: source('raw', 'ipca')
+        format: sql
+        fixture: stg_ipca_unit_test_slugify
+    expect:
+      format: dict
+      rows:
+        - date: "2024-01-01"
+          ipca_rate_last_12_months: 4.51
+          _source_file: ipca/IBGE_IPCA.csv
+
+  - name: test_stg_selic_slugify
+    description: >-
+      PascalCase BACEN headers become snake_case via CamelCase-aware slugify
+      (NumeroReuniaoCopom → numero_reuniao_copom, MetaSelic → meta_selic,
+      descisaoMonocraticaPres → descisao_monocratica_pres). Fixture uses raw
+      headers; select_slugified_columns uses var('selic_raw_columns') when the
+      unit-test CTE is not introspectable.
+    model: stg_selic
+    given:
+      - input: source('raw', 'selic')
+        format: sql
+        fixture: stg_selic_unit_test_slugify
+    expect:
+      format: dict
+      rows:
+        - numero_reuniao_copom: 280.0
+          reuniao_extraordinaria: false
+          vies: "n/a"
+          uso_meta_selic: false
+          meta_selic: 14.0
+          descisao_monocratica_pres: false
+          _source_file: selic/BACEN_SELIC.csv

@@ -6,6 +6,10 @@ Newest day first. One section per calendar day. Draft bullets for both this file
 `ITERATION_LOG.pt-BR.md`, preview them to the user, then append under today’s heading
 only after confirmation (create the day at the top if missing). See `.cursor/rules/commit-hygiene.mdc`.
 
+## 2026-08-30
+
+- **Add IPCA and SELIC to raw and staging** — `csv_datasets` for Kaggle IBGE/BACEN CSVs → `raw.ipca` / `raw.selic`; `stg_ipca` / `stg_selic` with CamelCase-aware slugify, casts, grain tests, dbt unit fixtures, CI seed, and docs. Verify: `uv run pytest`, `uv run python scripts/ingest_raw.py`, `DBT_PROFILES_DIR=. dbt run -s stg_ipca stg_selic`, `dbt test -s stg_ipca stg_selic`
+
 ## 2026-08-29
 
 - **Rely on `dbt_project.yml` for staging views** — drop redundant `{{ config(materialized='view') }}` from `stg_itbi` / `stg_cep_aberto`; fix Fusion unit tests by using Portuguese raw-header fixtures and letting `select_slugified_columns` run. Verify: `DBT_PROFILES_DIR=. dbt test -s stg_itbi stg_cep_aberto`
